@@ -80,8 +80,8 @@ def main():
     """K2000を使用した圧力測定のテスト"""
     print("K2000圧力測定テストを開始します...")
     
-    # K2000のインスタンスを作成
-    k2000 = Keithley2000()
+    # K2000のインスタンスを作成（ポートをttyUSB0に変更）
+    k2000 = Keithley2000(port='/dev/ttyUSB0')
     reconnect_attempts = 0
     max_reconnect_attempts = 3
     
