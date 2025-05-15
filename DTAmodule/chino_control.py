@@ -16,7 +16,14 @@ class ChinoController:
     def connect(self):
         """シリアル接続を確立"""
         try:
-            self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
+            self.ser = serial.Serial(
+                port=self.port,
+                baudrate=self.baudrate,
+                bytesize=serial.SEVENBITS,
+                parity=serial.PARITY_EVEN,
+                stopbits=serial.STOPBITS_ONE,
+                timeout=1
+            )
             return True
         except Exception as e:
             print("接続エラー: {}".format(e))
@@ -38,10 +45,16 @@ class ChinoController:
                 return None
         
         try:
-            self.ser.write("{}\r\n".format(command).encode())
+            # コマンドを送信
+            self.ser.write((command + "\r\n").encode('ascii'))
             time.sleep(0.1)
-            response = self.ser.readline().decode().strip()
-            return response
+            
+            # 応答を読み取り
+            response = self.ser.readline()
+            if response:
+                # バイト列を文字列に変換し、空白を削除
+                return response.decode('ascii', errors='ignore').strip()
+            return None
         except Exception as e:
             print("コマンド送信エラー: {}".format(e))
             return None
@@ -54,7 +67,9 @@ class ChinoController:
         """
         response = self.send_command("PV?")
         try:
-            return float(response)
+            # 数値部分のみを抽出
+            value = response.split(',')[0] if response else "0"
+            return float(value)
         except:
             return 0.0
     
