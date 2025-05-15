@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime
 import pandas as pd
+import csv
 
 class ExperimentManager:
     def __init__(self, config_dir="Experiment_condition"):
@@ -180,4 +181,115 @@ class ExperimentManager:
         
         # ファイルの保存
         df.to_csv(filepath, index=False)
-        return filepath 
+        return filepath
+
+class ExperimentMetadata:
+    def __init__(self, metadata_file="Experiment_result/experiment_metadata.json"):
+        """実験メタデータ管理クラス
+        
+        Args:
+            metadata_file (str): メタデータファイルのパス
+        """
+        self.metadata_file = metadata_file
+        self.metadata = self._load_metadata()
+    
+    def _load_metadata(self):
+        """メタデータを読み込む"""
+        if os.path.exists(self.metadata_file):
+            try:
+                with open(self.metadata_file, 'r') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
+    
+    def _save_metadata(self):
+        """メタデータを保存"""
+        os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
+        with open(self.metadata_file, 'w') as f:
+            json.dump(self.metadata, f, indent=4)
+    
+    def add_experiment(self, experiment_id, data):
+        """実験メタデータを追加
+        
+        Args:
+            experiment_id (str): 実験ID
+            data (dict): メタデータ
+        """
+        self.metadata[experiment_id] = {
+            'id': experiment_id,
+            'sample_name': data.get('sample_name', ''),
+            'lot': data.get('lot', ''),
+            'experimenter': data.get('experimenter', ''),
+            'date': datetime.datetime.now().strftime("%Y/%m/%d"),
+            'data_file': f"{experiment_id}_Results.csv",
+            'conditions': data.get('conditions', {})
+        }
+        self._save_metadata()
+    
+    def get_experiment(self, experiment_id):
+        """実験メタデータを取得
+        
+        Args:
+            experiment_id (str): 実験ID
+        
+        Returns:
+            dict: メタデータ
+        """
+        return self.metadata.get(experiment_id)
+    
+    def list_experiments(self):
+        """実験一覧を取得
+        
+        Returns:
+            list: 実験IDとメタデータのリスト
+        """
+        return [(exp_id, data) for exp_id, data in sorted(self.metadata.items())]
+    
+    def search_experiments(self, **kwargs):
+        """条件に合う実験を検索
+        
+        Args:
+            **kwargs: 検索条件（例：sample_name="Ionic liquids"）
+        
+        Returns:
+            list: 条件に合う実験IDとメタデータのリスト
+        """
+        results = []
+        for exp_id, data in self.metadata.items():
+            match = True
+            for key, value in kwargs.items():
+                if data.get(key) != value:
+                    match = False
+                    break
+            if match:
+                results.append((exp_id, data))
+        return results
+    
+    def export_to_csv(self, output_file="Experiment_result/experiment_history.csv"):
+        """実験履歴をCSVファイルにエクスポート
+        
+        Args:
+            output_file (str): 出力ファイルのパス
+        """
+        if not self.metadata:
+            return
+        
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with open(output_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            # ヘッダーの書き込み
+            headers = ['ID', 'Sample Name', 'Lot', 'Experimenter', 'Date', 'Data File']
+            writer.writerow(headers)
+            
+            # データの書き込み
+            for exp_id, data in sorted(self.metadata.items()):
+                row = [
+                    exp_id,
+                    data.get('sample_name', ''),
+                    data.get('lot', ''),
+                    data.get('experimenter', ''),
+                    data.get('date', ''),
+                    data.get('data_file', '')
+                ]
+                writer.writerow(row) 
