@@ -153,10 +153,10 @@ class Keithley2000Temperature:
             self.send_command("*RST")
             time.sleep(0.1)
             
-            # 温度測定モードに設定（K型熱電対）
+            # 温度測定モードに設定（E型熱電対）
             self.send_command("FUNC 'TEMP'")
             time.sleep(0.1)
-            self.send_command("TEMP:TC:TYPE K")
+            self.send_command("TEMP:TC:TYPE E")
             time.sleep(0.1)
             
             # ノイズ低減設定
