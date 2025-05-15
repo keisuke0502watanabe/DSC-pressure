@@ -241,11 +241,19 @@ class Keithley2182A:
         try:
             # リセット
             self.send_command("*RST")
-            time.sleep(0.1)
+            time.sleep(0.5)  # リセット後の待機時間を延長
+            
+            # 測定モードを確認
+            current_mode = self.send_command("FUNC?")
+            print("現在の測定モード: {}".format(current_mode))
             
             # DC電圧測定モードに設定
             self.send_command("FUNC 'VOLT:DC'")
-            time.sleep(0.1)
+            time.sleep(0.2)
+            
+            # 設定を確認
+            new_mode = self.send_command("FUNC?")
+            print("新しい測定モード: {}".format(new_mode))
             
             # ノイズ低減設定
             self.send_command("VOLT:DC:NPLC 1")
