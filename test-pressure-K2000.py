@@ -35,10 +35,6 @@ def check_k2000_settings(k2000):
         nplc = k2000.send_command("VOLT:DC:NPLC?")
         print("NPLC設定: {}".format(nplc))
         
-        # エラー状態
-        error = k2000.send_command("SYST:ERR?")
-        print("エラー状態: {}".format(error))
-        
         return True
     except Exception as e:
         print("設定の確認に失敗しました: {}".format(e))
