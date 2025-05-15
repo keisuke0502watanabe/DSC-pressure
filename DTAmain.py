@@ -14,7 +14,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from pressure_control import PressureControl
 from DTAmodule.visualize import DTAVisualizer
-from DTAmodule.experiment_manager import ExperimentManager
+from DTAmodule.experiment_manager import ExperimentManager, ExperimentMetadata
 from collections import deque
 import keyboard
 import matplotlib.pyplot as plt
@@ -57,6 +57,10 @@ class SpreadsheetManager:
         self.last_update = time.time()
         self.wks = None
         self.sheet_pointer = 2
+        self.connection_error = False
+        self.retry_count = 0
+        self.max_retries = 3
+        self.retry_delay = 5  # 秒
         self.initialize_sheet()
     
     def initialize_sheet(self):
@@ -69,8 +73,12 @@ class SpreadsheetManager:
             gc = gspread.authorize(credentials)
             self.wks = gc.open(self.sheet_name).sheet1
             self.set_column_headers()
+            self.connection_error = False
+            self.retry_count = 0
         except Exception as e:
             print("スプレッドシートの初期化エラー: {}".format(e))
+            self.connection_error = True
+            self._log_error("スプレッドシート初期化エラー", e)
     
     def set_column_headers(self):
         """カラムヘッダーの設定"""
@@ -110,6 +118,10 @@ class SpreadsheetManager:
         if not self.buffer:
             return
         
+        if self.connection_error:
+            print("スプレッドシートへの接続エラーが発生しています。データはローカルに保存されています。")
+            return
+        
         try:
             # データの準備
             rows = []
@@ -123,15 +135,12 @@ class SpreadsheetManager:
                     data['temp2182A'],
                     data['heat_or_cool'],
                     data['run'],
-                    data['date'],
-                    data['time_of_day'],
-                    data['sample_name'],
                     data['pressure']
                 ]
                 rows.append(row)
             
             # 一括更新
-            cell_range = 'A{}:L{}'.format(
+            cell_range = 'A{}:I{}'.format(
                 self.sheet_pointer,
                 self.sheet_pointer + len(rows) - 1
             )
@@ -143,10 +152,44 @@ class SpreadsheetManager:
             # バッファのクリアと最終更新時刻の更新
             self.buffer.clear()
             self.last_update = time.time()
+            self.retry_count = 0
             
         except Exception as e:
-            print("スプレッドシート更新エラー: {}".format(e))
-            # エラーが発生した場合、バッファは保持される
+            self.retry_count += 1
+            if self.retry_count >= self.max_retries:
+                self.connection_error = True
+                print("スプレッドシートへの接続が失敗しました。データはローカルに保存されています。")
+                self._log_error("スプレッドシート更新エラー", e)
+            else:
+                print("スプレッドシート更新エラー: {} (リトライ {}/{})".format(
+                    e, self.retry_count, self.max_retries))
+                time.sleep(self.retry_delay)
+    
+    def _log_error(self, error_type, error):
+        """エラーをログファイルに記録
+        
+        Args:
+            error_type (str): エラーの種類
+            error (Exception): エラーオブジェクト
+        """
+        try:
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open("spreadsheet_errors.log", "a") as f:
+                f.write("[{}] {}: {}\n".format(timestamp, error_type, str(error)))
+        except:
+            pass  # ログ記録に失敗してもプログラムは継続
+    
+    def check_connection(self):
+        """スプレッドシートへの接続を確認"""
+        if self.connection_error:
+            try:
+                self.initialize_sheet()
+                if not self.connection_error:
+                    print("スプレッドシートへの接続が回復しました。")
+                    return True
+            except:
+                pass
+        return not self.connection_error
 
 # スプレッドシートマネージャーの初期化
 spreadsheet_manager = SpreadsheetManager(
@@ -455,13 +498,30 @@ class ManualPlotter:
         }
         self.historical_data = {}  # 過去の実験データを保存
         self.active_plots = set()  # 現在表示中の実験ID
+        self.plot_alpha = 0.5  # 過去データの透明度
+        
+        # メタデータ管理の初期化
+        self.metadata_manager = ExperimentMetadata()
         
         # キーボードイベントの設定
         keyboard.on_press(self.handle_keyboard)
         
         # プロットウィンドウの初期化
-        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(10, 8))
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(12, 8))
         plt.ion()  # インタラクティブモードを有効化
+    
+    def find_experiment_files(self):
+        """実験結果ファイルを検索"""
+        experiments = self.metadata_manager.list_experiments()
+        if not experiments:
+            return []
+        
+        files = []
+        for exp_id, metadata in experiments:
+            data_file = os.path.join("Experiment_result", metadata['data_file'])
+            if os.path.exists(data_file):
+                files.append((exp_id, metadata['data_file']))
+        return files
     
     def load_historical_data(self, experiment_id, data_file):
         """過去の実験データを読み込む
@@ -476,119 +536,46 @@ class ManualPlotter:
                 'chino_temps': [],
                 'k2000_temps': [],
                 'dta_signals': [],
-                'pressures': []
+                'pressures': [],
+                'metadata': {}
             }
             
+            # メタデータの取得
+            metadata = self.metadata_manager.get_experiment(experiment_id)
+            if metadata:
+                data['metadata'] = metadata
+            
+            # データの読み込み
             with open(data_file, 'r') as f:
+                # メタデータの読み込み（ファイル内のメタデータ）
+                for _ in range(5):  # 最初の5行がメタデータ
+                    line = f.readline().strip()
+                    if line:
+                        key, value = line.split("\t")
+                        data['metadata'][key] = value
+                
+                # データの読み込み
                 reader = csv.reader(f, delimiter='\t')
                 next(reader)  # ヘッダーをスキップ
                 for row in reader:
-                    if len(row) >= 12:  # 必要な列数があることを確認
+                    if len(row) >= 9:  # 必要な列数があることを確認
                         data['times'].append(float(row[1]))
                         data['chino_temps'].append(float(row[0]))
                         data['k2000_temps'].append(float(row[4]))
                         data['dta_signals'].append(float(row[5]))
-                        data['pressures'].append(float(row[11]) if row[11] != 'N/A' else 0.0)
+                        data['pressures'].append(float(row[8]))
             
             self.historical_data[experiment_id] = data
             print("実験ID {} のデータを読み込みました".format(experiment_id))
+            print("サンプル名: {}".format(data['metadata'].get('Sample Name', 'N/A')))
+            print("実験者: {}".format(data['metadata'].get('Experimenter', 'N/A')))
+            print("日付: {}".format(data['metadata'].get('Date', 'N/A')))
             
         except Exception as e:
             print("データ読み込みエラー: {}".format(e))
     
-    def update_data(self, time_val, chino_temp, k2000_temp, dta, pressure):
-        """現在のデータを更新
-        
-        Args:
-            time_val (float): 時間
-            chino_temp (float): Chinoの温度
-            k2000_temp (float): K2000の温度
-            dta (float): DTA信号
-            pressure (float): 圧力
-        """
-        self.current_data['times'].append(time_val)
-        self.current_data['chino_temps'].append(chino_temp)
-        self.current_data['k2000_temps'].append(k2000_temp)
-        self.current_data['dta_signals'].append(dta)
-        self.current_data['pressures'].append(pressure)
-    
-    def update_plot(self):
-        """プロットの更新"""
-        self.ax1.clear()
-        self.ax2.clear()
-        
-        # 現在のデータをプロット
-        self.ax1.plot(self.current_data['times'], self.current_data['chino_temps'], 
-                     'b-', label='Current Chino Temperature')
-        self.ax1.plot(self.current_data['times'], self.current_data['k2000_temps'], 
-                     'c-', label='Current K2000 Temperature')
-        self.ax1.plot(self.current_data['times'], self.current_data['pressures'], 
-                     'g-', label='Current Pressure')
-        
-        # 過去のデータをプロット
-        for exp_id in self.active_plots:
-            if exp_id in self.historical_data:
-                data = self.historical_data[exp_id]
-                self.ax1.plot(data['times'], data['chino_temps'], 
-                            'b--', alpha=0.5, label='Exp {} Chino'.format(exp_id))
-                self.ax1.plot(data['times'], data['k2000_temps'], 
-                            'c--', alpha=0.5, label='Exp {} K2000'.format(exp_id))
-                self.ax1.plot(data['times'], data['pressures'], 
-                            'g--', alpha=0.5, label='Exp {} Pressure'.format(exp_id))
-                self.ax2.plot(data['times'], data['dta_signals'], 
-                            'r--', alpha=0.5, label='Exp {} DTA'.format(exp_id))
-        
-        # 現在のDTA信号をプロット
-        self.ax2.plot(self.current_data['times'], self.current_data['dta_signals'], 
-                     'r-', label='Current DTA Signal')
-        
-        # 軸の設定
-        self.ax1.set_ylabel('Temperature (K) / Pressure (MPa)')
-        self.ax1.set_title('DTA Measurement')
-        self.ax1.grid(True)
-        self.ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        
-        self.ax2.set_xlabel('Time (s)')
-        self.ax2.set_ylabel('DTA Signal (K)')
-        self.ax2.grid(True)
-        self.ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        
-        # 軸の範囲の自動調整
-        all_times = self.current_data['times'].copy()
-        all_temps = (self.current_data['chino_temps'] + 
-                    self.current_data['k2000_temps'] + 
-                    self.current_data['pressures'])
-        all_dta = self.current_data['dta_signals'].copy()
-        
-        for exp_id in self.active_plots:
-            if exp_id in self.historical_data:
-                data = self.historical_data[exp_id]
-                all_times.extend(data['times'])
-                all_temps.extend(data['chino_temps'] + data['k2000_temps'] + data['pressures'])
-                all_dta.extend(data['dta_signals'])
-        
-        if all_times:
-            self.ax1.set_xlim(min(all_times), max(all_times))
-            self.ax2.set_xlim(min(all_times), max(all_times))
-            
-            temp_min = min(all_temps)
-            temp_max = max(all_temps)
-            self.ax1.set_ylim(temp_min * 0.95, temp_max * 1.05)
-            
-            dta_min = min(all_dta)
-            dta_max = max(all_dta)
-            self.ax2.set_ylim(dta_min * 1.05, dta_max * 1.05)
-        
-        plt.tight_layout()
-        plt.draw()
-        plt.pause(0.1)
-    
     def handle_keyboard(self, event):
-        """キーボードイベントの処理
-        
-        Args:
-            event: キーボードイベント
-        """
+        """キーボードイベントの処理"""
         if event.name == 'u':  # 更新
             self.update_plot()
             print("グラフを更新しました")
@@ -605,23 +592,80 @@ class ManualPlotter:
             plt.close('all')
             print("グラフ表示を終了します")
         elif event.name == 'l':  # 過去データの読み込み
-            exp_id = input("読み込む実験IDを入力してください: ")
-            data_file = input("データファイルのパスを入力してください: ")
-            self.load_historical_data(exp_id, data_file)
-            self.active_plots.add(exp_id)
-            self.update_plot()
+            files = self.find_experiment_files()
+            if not files:
+                print("過去の実験データが見つかりません")
+                return
+            
+            print("\n利用可能な実験データ:")
+            for i, (exp_id, file) in enumerate(files):
+                metadata = self.metadata_manager.get_experiment(exp_id)
+                print("{0}: 実験ID {1} - {2} ({3})".format(
+                    i+1, exp_id, metadata.get('sample_name', 'N/A'),
+                    metadata.get('date', 'N/A')
+                ))
+            
+            try:
+                choice = int(input("\n読み込む実験データの番号を入力してください: ")) - 1
+                if 0 <= choice < len(files):
+                    exp_id, file = files[choice]
+                    self.load_historical_data(exp_id, os.path.join("Experiment_result", file))
+                    self.active_plots.add(exp_id)
+                    self.update_plot()
+                else:
+                    print("無効な選択です")
+            except ValueError:
+                print("無効な入力です")
         elif event.name == 'h':  # 過去データの表示/非表示
-            exp_id = input("表示/非表示を切り替える実験IDを入力してください: ")
-            if exp_id in self.active_plots:
-                self.active_plots.remove(exp_id)
-                print("実験ID {} の表示を非表示にしました".format(exp_id))
+            if not self.historical_data:
+                print("読み込まれた過去データがありません")
+                return
+            
+            print("\n表示/非表示を切り替える実験ID:")
+            for exp_id in self.historical_data:
+                metadata = self.metadata_manager.get_experiment(exp_id)
+                status = "表示中" if exp_id in self.active_plots else "非表示"
+                print("{0}: {1} ({2})".format(
+                    exp_id, status, metadata.get('sample_name', 'N/A')
+                ))
+            
+            exp_id = input("\n切り替える実験IDを入力してください: ")
+            if exp_id in self.historical_data:
+                if exp_id in self.active_plots:
+                    self.active_plots.remove(exp_id)
+                    print("実験ID {} の表示を非表示にしました".format(exp_id))
+                else:
+                    self.active_plots.add(exp_id)
+                    print("実験ID {} の表示を表示にしました".format(exp_id))
+                self.update_plot()
             else:
-                self.active_plots.add(exp_id)
-                print("実験ID {} の表示を表示にしました".format(exp_id))
-            self.update_plot()
+                print("無効な実験IDです")
+        elif event.name == 'a':  # 透明度調整
+            try:
+                alpha = float(input("過去データの透明度を入力してください (0.0-1.0): "))
+                if 0.0 <= alpha <= 1.0:
+                    self.plot_alpha = alpha
+                    self.update_plot()
+                    print("透明度を {} に設定しました".format(alpha))
+                else:
+                    print("透明度は0.0から1.0の間で指定してください")
+            except ValueError:
+                print("無効な入力です")
+        elif event.name == 'e':  # 実験履歴のエクスポート
+            self.metadata_manager.export_to_csv()
+            print("実験履歴をCSVファイルにエクスポートしました")
     
     def show(self):
         """グラフの表示"""
+        print("\nキーボードショートカット:")
+        print("u: グラフ更新")
+        print("r: グラフリセット")
+        print("s: グラフ保存")
+        print("q: 終了")
+        print("l: 過去データの読み込み")
+        print("h: 過去データの表示/非表示切り替え")
+        print("a: 過去データの透明度調整")
+        print("e: 実験履歴のエクスポート")
         plt.show(block=True)
 
 plotter = ManualPlotter()
@@ -695,14 +739,24 @@ for k in range(1,len(line)):
               vttotemp.VtToTemp(pv2000), vttotemp.VtToTemp(pv2182A), pressure_str)
         
         try:
-            result = "{:.3f}\t {:.3f}\t {:.10f}\t {:.10f}\t {:.10f}\t {:.10f}\t {}\t {} \t {} \t {} \t {} \t {}\n".format(
+            # 初回のみヘッダーを保存
+            if not os.path.exists(filenameResults):
+                save_results_header(filenameResults, {
+                    'id': experiment_manager.get_current_experiment_id(),
+                    'sample_name': sampleName,
+                    'lot': input("ロット番号を入力してください: "),
+                    'experimenter': input("実験者名を入力してください: ")
+                })
+            
+            # データの記録（Date, Time of Day, Sample Nameの列を削除）
+            result = "{:.3f}\t{:.3f}\t{:.10f}\t{:.10f}\t{:.10f}\t{:.10f}\t{}\t{}\t{:.3f}\n".format(
                 float(Tsvtemp), float(t1-t0), pv2000, pv2182A, 
                 vttotemp.VtToTemp(pv2000), vttotemp.VtToTemp(pv2182A),
-                hoc, k, datetime.date.today(), datetime.datetime.now().time(),
-                sampleName, pressure_str)
+                hoc, k, current_pressure if current_pressure is not None else 0.0
+            )
             f.write(result)
             
-            # スプレッドシートへのデータ追加
+            # スプレッドシートへのデータ追加（メタデータを含む）
             spreadsheet_manager.add_data({
                 'temperature': float(Tsvtemp),
                 'time': float(t1-t0),
@@ -712,9 +766,6 @@ for k in range(1,len(line)):
                 'temp2182A': vttotemp.VtToTemp(pv2182A),
                 'heat_or_cool': hoc,
                 'run': k,
-                'date': str(datetime.date.today()),
-                'time_of_day': str(datetime.datetime.now().time()),
-                'sample_name': sampleName,
                 'pressure': current_pressure if current_pressure is not None else 0.0
             })
             
@@ -811,3 +862,21 @@ spreadsheet_manager.flush()
 
 # グラフの表示
 plotter.show()
+
+def save_results_header(filename, experiment_data):
+    """実験結果ファイルのヘッダーを保存
+    
+    Args:
+        filename (str): ファイル名
+        experiment_data (dict): 実験データ
+    """
+    with open(filename, 'w') as f:
+        # メタデータの保存
+        f.write("ID\t{}\n".format(experiment_data.get('id', '')))
+        f.write("Sample Name\t{}\n".format(experiment_data.get('sample_name', '')))
+        f.write("Lot\t{}\n".format(experiment_data.get('lot', '')))
+        f.write("Experimenter\t{}\n".format(experiment_data.get('experimenter', '')))
+        f.write("Date\t{}\n".format(datetime.datetime.now().strftime("%Y/%m/%d")))
+        
+        # データヘッダーの保存
+        f.write("set Temp. / K\ttime / s\tdt of Kei2000/ microvolts\tdt of Kei2182A/ microvolts\tdt of Kei2000/K\tdt of Kei2182A/K\tHeat or cool\tRun\tPressure / MPa\n")
