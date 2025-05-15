@@ -14,6 +14,52 @@ def check_port_exists(port):
     except:
         return False
 
+def check_communication_settings(k2000):
+    """通信設定を確認"""
+    try:
+        # 現在の設定を確認
+        print("\n現在の通信設定:")
+        
+        # ボーレート確認
+        baud = k2000.send_command("SYST:COMM:SER:BAUD?")
+        print("ボーレート: {}".format(baud))
+        
+        # パリティ確認
+        parity = k2000.send_command("SYST:COMM:SER:PAR?")
+        print("パリティ: {}".format(parity))
+        
+        # データビット確認
+        data_bits = k2000.send_command("SYST:COMM:SER:SBIT?")
+        print("ストップビット: {}".format(data_bits))
+        
+        # 終端文字確認
+        term = k2000.send_command("SYST:COMM:SER:TERM?")
+        print("終端文字: {}".format(term))
+        
+        return True
+    except Exception as e:
+        print("通信設定の確認に失敗しました: {}".format(e))
+        return False
+
+def set_communication_settings(k2000):
+    """通信設定を行う"""
+    try:
+        print("\n通信設定を更新します...")
+        
+        # ボーレート設定
+        k2000.send_command("SYST:COMM:SER:BAUD 9600")
+        time.sleep(0.1)
+        
+        # 終端文字設定
+        k2000.send_command("SYST:COMM:SER:TERM LF")
+        time.sleep(0.1)
+        
+        print("通信設定を更新しました")
+        return True
+    except Exception as e:
+        print("通信設定の更新に失敗しました: {}".format(e))
+        return False
+
 def main():
     """K2000を使用した温度測定のテスト"""
     print("K2000温度測定テストを開始します...")
@@ -40,6 +86,13 @@ def main():
             
             print("K2000に接続しました")
             reconnect_attempts = 0  # 接続成功したらリセット
+            
+            # 通信設定の設定
+            if not set_communication_settings(k2000):
+                print("通信設定の更新に失敗しました")
+                k2000.disconnect()
+                time.sleep(2)
+                continue
             
             # 初期化
             if not k2000.initialize():
