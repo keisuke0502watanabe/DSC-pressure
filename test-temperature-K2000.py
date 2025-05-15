@@ -27,12 +27,12 @@ def check_k2000_settings(k2000):
         func = k2000.send_command("FUNC?")
         print("測定モード: {}".format(func))
         
-        # 熱電対タイプ
-        tc_type = k2000.send_command("TEMP:TC:TYPE?")
-        print("熱電対タイプ: {}".format(tc_type))
+        # 測定範囲
+        range_val = k2000.send_command("VOLT:DC:RANG?")
+        print("測定範囲: {}".format(range_val))
         
         # ノイズ低減設定
-        nplc = k2000.send_command("TEMP:NPLC?")
+        nplc = k2000.send_command("VOLT:DC:NPLC?")
         print("NPLC設定: {}".format(nplc))
         
         return True
@@ -41,8 +41,8 @@ def check_k2000_settings(k2000):
         return False
 
 def main():
-    """K2000を使用した温度測定のテスト"""
-    print("K2000温度測定テストを開始します...")
+    """K2000を使用した電圧測定のテスト"""
+    print("K2000電圧測定テストを開始します...")
     
     # K2000のインスタンスを作成（ポートをttyUSB1に変更）
     k2000 = Keithley2000Temperature(port='/dev/ttyUSB1')
@@ -84,16 +84,16 @@ def main():
             print("K2000の初期化が完了しました")
             
             # 測定開始
-            print("\n温度測定を開始します...")
+            print("\n電圧測定を開始します...")
             print("Ctrl+Cで終了できます")
             
             while True:
                 try:
-                    # 温度を測定
-                    temperature = k2000.get_temperature()
+                    # 電圧を測定
+                    voltage = k2000.get_voltage()
                     
-                    if temperature is not None:
-                        print("\r現在の温度: {:.2f}°C".format(temperature), end="")
+                    if voltage is not None:
+                        print("\r現在の電圧: {:.6f}V".format(voltage), end="")
                     else:
                         print("\r測定エラー", end="")
                         raise Exception("測定値が取得できません")
