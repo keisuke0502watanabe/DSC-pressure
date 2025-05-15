@@ -20,7 +20,7 @@ import keyboard
 import matplotlib.pyplot as plt
 
 #鍵 
-key_name = '/home/pi/Desktop/json_file/teruyama/my-project-333708-dad962c8e2e4.json'
+key_name = '/home/pi/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json'
 sheet_name = 'teruyama test1'
 #APIにログイン
 scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
@@ -193,7 +193,7 @@ class SpreadsheetManager:
 
 # スプレッドシートマネージャーの初期化
 spreadsheet_manager = SpreadsheetManager(
-    key_name='/home/pi/Desktop/json_file/teruyama/my-project-333708-dad962c8e2e4.json',
+    key_name='/home/pi/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json',
     sheet_name='teruyama test1'
 )
 
@@ -730,9 +730,9 @@ for k in range(1,len(line)):
         # 結果の記録
         f = open(str(filenameResults), mode='a')
         if rate[k] > 0:
-            hoc = "heat"
+                    hoc = "heat"
         elif rate[k] < 0:
-            hoc = "cool"
+                    hoc = "cool"
         
         pressure_str = "{:.3f}".format(current_pressure) if current_pressure is not None else "N/A"
         print(k, datetime.datetime.now(), round(Tsvtemp,3), round(t1-t0,3), pv2000, pv2182A, 
@@ -754,7 +754,7 @@ for k in range(1,len(line)):
                 vttotemp.VtToTemp(pv2000), vttotemp.VtToTemp(pv2182A),
                 hoc, k, current_pressure if current_pressure is not None else 0.0
             )
-            f.write(result)
+        f.write(result)
             
             # スプレッドシートへのデータ追加（メタデータを含む）
             spreadsheet_manager.add_data({
