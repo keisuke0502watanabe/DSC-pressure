@@ -16,7 +16,14 @@ class Keithley2000:
     def connect(self):
         """シリアル接続を確立"""
         try:
-            self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
+            self.ser = serial.Serial(
+                port=self.port,
+                baudrate=self.baudrate,
+                bytesize=serial.EIGHTBITS,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                timeout=2
+            )
             return True
         except Exception as e:
             print("接続エラー: {}".format(e))
@@ -38,7 +45,7 @@ class Keithley2000:
                 return None
         
         try:
-            self.ser.write("{}\n".format(command).encode())
+            self.ser.write((command + "\n").encode())
             time.sleep(0.1)
             response = self.ser.readline().decode().strip()
             return response
@@ -46,17 +53,59 @@ class Keithley2000:
             print("コマンド送信エラー: {}".format(e))
             return None
     
+    def initialize(self):
+        """機器の初期化と設定"""
+        try:
+            # リセット
+            self.send_command("*RST")
+            time.sleep(0.1)
+            
+            # RS-232C設定
+            self.send_command("SYST:COMM:SER:BAUD {}".format(self.baudrate))
+            self.send_command("SYST:COMM:SER:PAR NONE")
+            self.send_command("SYST:COMM:SER:SBIT 1")
+            self.send_command("SYST:COMM:SER:TERM LF")
+            
+            # DC電圧測定モードに設定
+            self.send_command("FUNC 'VOLT:DC'")
+            
+            # ノイズ低減設定
+            self.send_command("VOLT:DC:NPLC 10")
+            
+            # 測定範囲設定
+            self.send_command("VOLT:DC:RANG 0.1")
+            
+            # 継続測定開始
+            self.send_command("INIT:CONT ON")
+            
+            return True
+        except Exception as e:
+            print("初期化エラー: {}".format(e))
+            return False
+    
     def get_voltage(self):
         """電圧を測定
         
         Returns:
             float: 測定された電圧値
         """
-        response = self.send_command(":MEAS:VOLT:DC?")
         try:
-            return float(response)
-        except:
-            return 0.0
+            # 初期化
+            if not self.initialize():
+                return None
+            
+            # 設定が反映されるのを待つ
+            time.sleep(0.5)
+            
+            # データ取得
+            response = self.send_command("FETC?")
+            
+            if response:
+                return float(response)
+            return None
+        except Exception as e:
+            print("電圧取得エラー: {}".format(e))
+            return None
 
 class Keithley2182A:
     def __init__(self, port='/dev/ttyUSB3', baudrate=9600):
@@ -67,7 +116,14 @@ class Keithley2182A:
     
     def connect(self):
         try:
-            self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
+            self.ser = serial.Serial(
+                port=self.port,
+                baudrate=self.baudrate,
+                bytesize=serial.EIGHTBITS,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                timeout=2
+            )
             return True
         except Exception as e:
             print("接続エラー: {}".format(e))
@@ -83,7 +139,7 @@ class Keithley2182A:
                 return None
         
         try:
-            self.ser.write("{}\n".format(command).encode())
+            self.ser.write((command + "\n").encode())
             time.sleep(0.1)
             response = self.ser.readline().decode().strip()
             return response
@@ -91,12 +147,59 @@ class Keithley2182A:
             print("コマンド送信エラー: {}".format(e))
             return None
     
-    def get_voltage(self):
-        response = self.send_command(":MEAS:VOLT:DC?")
+    def initialize(self):
+        """機器の初期化と設定"""
         try:
-            return float(response)
-        except:
-            return 0.0
+            # リセット
+            self.send_command("*RST")
+            time.sleep(0.1)
+            
+            # RS-232C設定
+            self.send_command("SYST:COMM:SER:BAUD {}".format(self.baudrate))
+            self.send_command("SYST:COMM:SER:PAR NONE")
+            self.send_command("SYST:COMM:SER:SBIT 1")
+            self.send_command("SYST:COMM:SER:TERM LF")
+            
+            # DC電圧測定モードに設定
+            self.send_command("FUNC 'VOLT:DC'")
+            
+            # ノイズ低減設定
+            self.send_command("VOLT:DC:NPLC 10")
+            
+            # 測定範囲設定
+            self.send_command("VOLT:DC:RANG 0.1")
+            
+            # 継続測定開始
+            self.send_command("INIT:CONT ON")
+            
+            return True
+        except Exception as e:
+            print("初期化エラー: {}".format(e))
+            return False
+    
+    def get_voltage(self):
+        """電圧を測定
+        
+        Returns:
+            float: 測定された電圧値
+        """
+        try:
+            # 初期化
+            if not self.initialize():
+                return None
+            
+            # 設定が反映されるのを待つ
+            time.sleep(0.5)
+            
+            # データ取得
+            response = self.send_command("FETC?")
+            
+            if response:
+                return float(response)
+            return None
+        except Exception as e:
+            print("電圧取得エラー: {}".format(e))
+            return None
 
 # グローバルインスタンス
 k2000 = Keithley2000()
