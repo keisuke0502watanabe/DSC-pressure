@@ -2,7 +2,7 @@ import serial
 import time
 
 class Keithley2000:
-    def __init__(self, port='/dev/ttyUSB2', baudrate=9600):
+    def __init__(self, port='/dev/ttyUSB3', baudrate=9600):
         """Keithley 2000の初期化
         
         Args:
@@ -108,7 +108,7 @@ class Keithley2000:
             return None
 
 class Keithley2182A:
-    def __init__(self, port='/dev/ttyUSB3', baudrate=9600):
+    def __init__(self, port='/dev/ttyUSB2', baudrate=9600):
         """Keithley 2182Aの初期化"""
         self.port = port
         self.baudrate = baudrate
