@@ -14,31 +14,41 @@ def check_port_exists(port):
     except:
         return False
 
-def check_communication_settings(k2000):
-    """通信設定を確認"""
+def check_k2000_settings(k2000):
+    """K2000の設定を確認"""
     try:
-        # 現在の設定を確認
-        print("\n現在の通信設定:")
+        print("\nK2000の設定を確認します...")
         
-        # ボーレート確認
+        # 機器の識別情報
+        idn = k2000.send_command("*IDN?")
+        print("機器情報: {}".format(idn))
+        
+        # 現在の測定モード
+        func = k2000.send_command("FUNC?")
+        print("測定モード: {}".format(func))
+        
+        # 測定範囲
+        range_val = k2000.send_command("VOLT:DC:RANG?")
+        print("測定範囲: {}".format(range_val))
+        
+        # ノイズ低減設定
+        nplc = k2000.send_command("VOLT:DC:NPLC?")
+        print("NPLC設定: {}".format(nplc))
+        
+        # 通信設定
         baud = k2000.send_command("SYST:COMM:SER:BAUD?")
         print("ボーレート: {}".format(baud))
         
-        # パリティ確認
-        parity = k2000.send_command("SYST:COMM:SER:PAR?")
-        print("パリティ: {}".format(parity))
-        
-        # データビット確認
-        data_bits = k2000.send_command("SYST:COMM:SER:SBIT?")
-        print("ストップビット: {}".format(data_bits))
-        
-        # 終端文字確認
         term = k2000.send_command("SYST:COMM:SER:TERM?")
         print("終端文字: {}".format(term))
         
+        # エラー状態
+        error = k2000.send_command("SYST:ERR?")
+        print("エラー状態: {}".format(error))
+        
         return True
     except Exception as e:
-        print("通信設定の確認に失敗しました: {}".format(e))
+        print("設定の確認に失敗しました: {}".format(e))
         return False
 
 def set_communication_settings(k2000):
@@ -86,6 +96,13 @@ def main():
             
             print("K2000に接続しました")
             reconnect_attempts = 0  # 接続成功したらリセット
+            
+            # 設定の確認
+            if not check_k2000_settings(k2000):
+                print("設定の確認に失敗しました")
+                k2000.disconnect()
+                time.sleep(2)
+                continue
             
             # 通信設定の設定
             if not set_communication_settings(k2000):
