@@ -35,13 +35,6 @@ def check_k2000_settings(k2000):
         nplc = k2000.send_command("TEMP:NPLC?")
         print("NPLC設定: {}".format(nplc))
         
-        # 通信設定
-        baud = k2000.send_command("SYST:COMM:SER:BAUD?")
-        print("ボーレート: {}".format(baud))
-        
-        term = k2000.send_command("SYST:COMM:SER:TERM?")
-        print("終端文字: {}".format(term))
-        
         # エラー状態
         error = k2000.send_command("SYST:ERR?")
         print("エラー状態: {}".format(error))
@@ -49,25 +42,6 @@ def check_k2000_settings(k2000):
         return True
     except Exception as e:
         print("設定の確認に失敗しました: {}".format(e))
-        return False
-
-def set_communication_settings(k2000):
-    """通信設定を行う"""
-    try:
-        print("\n通信設定を更新します...")
-        
-        # ボーレート設定
-        k2000.send_command("SYST:COMM:SER:BAUD 9600")
-        time.sleep(0.1)
-        
-        # 終端文字設定
-        k2000.send_command("SYST:COMM:SER:TERM LF")
-        time.sleep(0.1)
-        
-        print("通信設定を更新しました")
-        return True
-    except Exception as e:
-        print("通信設定の更新に失敗しました: {}".format(e))
         return False
 
 def main():
@@ -100,13 +74,6 @@ def main():
             # 設定の確認
             if not check_k2000_settings(k2000):
                 print("設定の確認に失敗しました")
-                k2000.disconnect()
-                time.sleep(2)
-                continue
-            
-            # 通信設定の設定
-            if not set_communication_settings(k2000):
-                print("通信設定の更新に失敗しました")
                 k2000.disconnect()
                 time.sleep(2)
                 continue
