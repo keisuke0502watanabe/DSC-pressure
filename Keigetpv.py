@@ -95,7 +95,7 @@ class Keithley2000Pressure:
             return None
 
 class Keithley2000Temperature:
-    """温度測定用K2000制御クラス"""
+    """電圧測定用K2000制御クラス"""
     def __init__(self, port='/dev/ttyUSB1'):
         self.port = port
         self.ser = None
@@ -147,24 +147,22 @@ class Keithley2000Temperature:
             return None
 
     def initialize(self):
-        """温度測定用の初期化"""
+        """電圧測定用の初期化"""
         try:
             # リセット
             self.send_command("*RST")
             time.sleep(0.1)
             
-            # 温度測定モードに設定（E型熱電対）
-            self.send_command("FUNC 'TEMP'")
-            time.sleep(0.1)
-            self.send_command("TEMP:TC:TYPE E")
+            # DC電圧測定モードに設定
+            self.send_command("FUNC 'VOLT:DC'")
             time.sleep(0.1)
             
             # ノイズ低減設定
-            self.send_command("TEMP:NPLC 1")
+            self.send_command("VOLT:DC:NPLC 1")
             time.sleep(0.1)
             
             # 測定範囲を自動に設定
-            self.send_command("TEMP:RANG:AUTO ON")
+            self.send_command("VOLT:DC:RANG:AUTO ON")
             time.sleep(0.1)
             
             # 連続測定を開始
@@ -176,14 +174,14 @@ class Keithley2000Temperature:
             print("初期化エラー: {}".format(e))
             return False
 
-    def get_temperature(self):
-        """温度を測定"""
+    def get_voltage(self):
+        """電圧を測定"""
         try:
             # 最新の測定値を取得
-            temp = float(self.send_command("FETCH?"))
-            return temp
+            voltage = float(self.send_command("FETCH?"))
+            return voltage
         except Exception as e:
-            print("温度測定エラー: {}".format(e))
+            print("電圧測定エラー: {}".format(e))
             return None
 
 # グローバルインスタンス
@@ -195,5 +193,5 @@ def getPressure():
     return k2000_pressure.get_voltage()
 
 def getTemperature():
-    """温度を取得"""
-    return k2000_temperature.get_temperature() 
+    """電圧を取得"""
+    return k2000_temperature.get_voltage() 
