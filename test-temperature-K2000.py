@@ -4,7 +4,7 @@
 import time
 import sys
 import serial
-from Keigetpv import Keithley2000Pressure
+from Keigetpv import Keithley2000Temperature
 
 def check_port_exists(port):
     """USBポートの存在を確認"""
@@ -27,12 +27,12 @@ def check_k2000_settings(k2000):
         func = k2000.send_command("FUNC?")
         print("測定モード: {}".format(func))
         
-        # 測定範囲
-        range_val = k2000.send_command("VOLT:DC:RANG?")
-        print("測定範囲: {}".format(range_val))
+        # 熱電対タイプ
+        tc_type = k2000.send_command("TEMP:TC:TYPE?")
+        print("熱電対タイプ: {}".format(tc_type))
         
         # ノイズ低減設定
-        nplc = k2000.send_command("VOLT:DC:NPLC?")
+        nplc = k2000.send_command("TEMP:NPLC?")
         print("NPLC設定: {}".format(nplc))
         
         # 通信設定
@@ -70,18 +70,12 @@ def set_communication_settings(k2000):
         print("通信設定の更新に失敗しました: {}".format(e))
         return False
 
-def voltage_to_pressure(voltage):
-    """電圧から圧力に変換（変換係数は要調整）"""
-    # 圧力センサーの仕様に応じて変換係数を調整してください
-    # 例: 0-10V → 0-10MPa の場合
-    return voltage * 1.0  # 1V = 1MPa
-
 def main():
-    """K2000を使用した圧力測定のテスト"""
-    print("K2000圧力測定テストを開始します...")
+    """K2000を使用した温度測定のテスト"""
+    print("K2000温度測定テストを開始します...")
     
-    # K2000のインスタンスを作成（ポートをttyUSB0に変更）
-    k2000 = Keithley2000Pressure(port='/dev/ttyUSB0')
+    # K2000のインスタンスを作成（ポートをttyUSB1に変更）
+    k2000 = Keithley2000Temperature(port='/dev/ttyUSB1')
     reconnect_attempts = 0
     max_reconnect_attempts = 3
     
@@ -127,18 +121,16 @@ def main():
             print("K2000の初期化が完了しました")
             
             # 測定開始
-            print("\n圧力測定を開始します...")
+            print("\n温度測定を開始します...")
             print("Ctrl+Cで終了できます")
             
             while True:
                 try:
-                    # 電圧を測定
-                    voltage = k2000.get_voltage()
+                    # 温度を測定
+                    temperature = k2000.get_temperature()
                     
-                    if voltage is not None:
-                        # 電圧から圧力に変換
-                        pressure = voltage_to_pressure(voltage)
-                        print("\r現在の圧力: {:.3f}MPa (電圧: {:.6f}V)".format(pressure, voltage), end="")
+                    if temperature is not None:
+                        print("\r現在の温度: {:.2f}°C".format(temperature), end="")
                     else:
                         print("\r測定エラー", end="")
                         raise Exception("測定値が取得できません")
