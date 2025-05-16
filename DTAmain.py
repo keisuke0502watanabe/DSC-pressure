@@ -55,6 +55,43 @@ filenameExpCond, sampleName = experiment_conditions.get_experiment_conditions()
 filenameResults = filenameExpCond.replace('ExpCond.csv', 'Results.csv')
 filenameError = filenameExpCond.replace('ExpCond.csv', 'Error.csv')
 
+# 実験条件の解析と設定値の計算
+Tsv, Tf, rate, wait, dt, pressure, pressure_tolerance, timeExp = experiment_conditions.parse_experiment_conditions(filenameExpCond)
+
+# 現在の状態を表示
+print("\n=== 現在の状態 ===")
+try:
+    # Chinoの温度を取得
+    chino = ChinoController()
+    chino.connect()
+    chino_temp = chino.get_temperature()
+    print("Chino設定温度: {:.2f} K".format(chino_temp))
+except Exception as e:
+    print("Chino温度取得エラー: {}".format(e))
+
+try:
+    # Keithley 2000の電圧を取得して温度に変換
+    pv2000 = float(keithley_control.getPv2000())*1000000
+    k2000_temp = vttotemp.VtToTemp(pv2000)
+    print("Keithley 2000温度: {:.2f} K".format(k2000_temp))
+except Exception as e:
+    print("Keithley 2000温度取得エラー: {}".format(e))
+
+try:
+    # 圧力を取得
+    if pressure_control is not None:
+        current_pressure = pressure_control.get_pressure()
+        if current_pressure is not None:
+            print("現在の圧力: {:.2f} MPa".format(current_pressure))
+        else:
+            print("圧力取得エラー: 値が取得できません")
+    else:
+        print("圧力制御が初期化されていません")
+except Exception as e:
+    print("圧力取得エラー: {}".format(e))
+
+print("================\n")
+
 # メインプログラムの開始部分を修正
 Q2 = input("Have you already measured? y/n:")
 if Q2 == "y":
@@ -71,7 +108,10 @@ elif Q2 == 'n':
     f.close()
     f = open(str(filenameError), mode='a')
     f.close()
+
 print(os.getcwd())
+
+# 実験条件の読み込みと表示
 with open(filenameExpCond,'r') as file:
     reader = csv.reader(file)
     line = [row for row in reader]
@@ -90,9 +130,6 @@ if not os.path.exists(filenameResults):
     f = open(str(filenameResults), mode='a')
     f.write("set Temp. / K,time / s,dt of Kei2000/ microvolts,dt of Kei2182A/ microvolts,dt of Kei2000/K,dt of Kei2182A/K,Heat or cool,Run,Date,Time of Day,Sample Name\n")
     f.close()
-
-# 実験条件の解析と設定値の計算
-Tsv, Tf, rate, wait, dt, pressure, pressure_tolerance, timeExp = experiment_conditions.parse_experiment_conditions(filenameExpCond)
 
 #change temp. to first Tsv
 chino = ChinoController()
