@@ -4,7 +4,7 @@ import datetime
 import threading
 import csv
 import os
-import vttotemp
+from DTAmodule import vttotemp
 import am
 import traceback
 from natsort import natsorted
