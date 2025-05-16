@@ -91,36 +91,8 @@ if not os.path.exists(filenameResults):
     f.write("set Temp. / K,time / s,dt of Kei2000/ microvolts,dt of Kei2182A/ microvolts,dt of Kei2000/K,dt of Kei2182A/K,Heat or cool,Run,Date,Time of Day,Sample Name\n")
     f.close()
 
-
-     
 # 実験条件の解析と設定値の計算
-Tsv=['Tsv']
-Tf=['Tf']
-rate=['rate']
-wait=['wait']
-dt=['dt']
-pressure=['pressure']  # 圧力条件
-pressure_tolerance=['pressure_tolerance']  # 圧力許容パーセント
-timeExp=0
-for k in range(1,len(line)):
-    try:
-        Tsv.append(float(line[k][1]))
-        Tf.append(float(line[k][2]))
-        rate.append(float(line[k][3]))
-        wait_val = line[k][4].strip()  # 空白を削除
-        wait.append(float(wait_val))
-        dt.append(float(line[k][3])/60)
-        pressure.append(float(line[k][5]))  # 圧力条件を読み込み
-        pressure_tolerance.append(float(line[k][6]))  # 圧力許容パーセントを読み込み
-        print(k,Tsv, Tf, rate, wait, dt, pressure, pressure_tolerance)
-        timeExp=timeExp+abs((Tf[k]-Tsv[k])/rate[k])+wait[k]/60
-        print(k, timeExp)
-    except (ValueError, IndexError) as e:
-        print("Error converting values in line {}: {}".format(k, e))
-        print("Line content: {}".format(line[k]))
-        raise
-timeExp=timeExp-float(wait[len(line)-1])/60  # 最後のwait時間を引く
-print(timeExp)
+Tsv, Tf, rate, wait, dt, pressure, pressure_tolerance, timeExp = experiment_conditions.parse_experiment_conditions(filenameExpCond)
 
 #change temp. to first Tsv
 chino = ChinoController()
