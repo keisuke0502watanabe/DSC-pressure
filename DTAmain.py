@@ -301,12 +301,9 @@ list_pointer = 0
 wks = None
 thread1 = threading.Thread(target=columnSet, args=(wks,))
 thread2 = threading.Thread(target=wksUpdate, args=(wks,cell_list,))
-
 thread3 = threading.Thread(target=cellListUpdate, args=(wks, sheet_pointer,))
 
-print(sheet_name)
-
-#　以下本文
+# 以下本文
 m = 1
 text = []
 
