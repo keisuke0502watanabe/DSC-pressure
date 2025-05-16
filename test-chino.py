@@ -96,7 +96,11 @@ class ChinoController:
                         comma_count += 1
                         if comma_count == 5:  # PV値の位置
                             pv = response[14:23]
-                            return float(pv)
+                            try:
+                                return float(pv)
+                            except ValueError:
+                                print("温度値の変換に失敗しました: {}".format(pv))
+                                return None
                     response += char
                     
                     if value == 10:  # LF
@@ -145,7 +149,10 @@ class ChinoController:
         """
         try:
             command = " 1, 1,"  # 温度取得コマンド
-            return self.send_command(command)
+            temp = self.send_command(command)
+            if temp is not None:
+                print("取得した温度値: {}".format(temp))
+            return temp
         except Exception as e:
             print("温度取得エラー: {}".format(e))
             return None
