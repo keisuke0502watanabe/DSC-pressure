@@ -8,13 +8,12 @@ import os
 from DTAmodule import vttotemp
 import traceback
 from natsort import natsorted
-# import gspread
-# from oauth2client.service_account import ServiceAccountCredentials
 from DTAmodule.pressure_control import PressureControl
 from DTAmodule.visualize import DTAVisualizer
 from DTAmodule.experiment_manager import ExperimentManager, ExperimentMetadata
 from DTAmodule.plotter import MenuDrivenPlotter
 from DTAmodule.keyboard_handler import KeyboardHandler
+from DTAmodule.spreadsheet_manager import SpreadsheetManager
 from collections import deque
 import matplotlib.pyplot as plt
 
