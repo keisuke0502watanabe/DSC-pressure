@@ -118,10 +118,6 @@ class ChinoController:
     def initialize(self):
         """初期化"""
         try:
-            # リセット
-            self.send_command(" 1, 0,")  # リセットコマンド
-            time.sleep(0.5)
-            
             # 出力をオフ
             self.send_command(" 1, 2,")  # 出力オフコマンド
             time.sleep(0.1)
