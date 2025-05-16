@@ -279,6 +279,32 @@ k2000_pressure = Keithley2000Pressure()
 k2000_temperature = Keithley2000Temperature()
 k2182a = Keithley2182A()
 
+def VtToTemp(Vt):
+    """電圧から温度への変換
+    
+    Args:
+        Vt (float): 電圧値（V）
+        
+    Returns:
+        float: 温度値（K）
+    """
+    if (Vt>=-9500 and Vt<-8025):
+        return 2215.71556 + 0.7279584164*Vt + 8.6987279178e-5*Vt**2 + 3.628145299e-9*Vt**3
+    elif (Vt>=-8025 and Vt<=-6200):
+        return 351.9516207 + 0.05462261832*Vt + 5.836711682e-6*Vt**2 + 3.652376504e-10*Vt**3
+    elif (Vt>=-6200 and Vt<=-3950):
+        return 277.3823785 + 0.02011218159*Vt + 4.949648236e-7*Vt**2 + 8.859387968e-11*Vt**3
+    elif (Vt>=-3950 and Vt<=-1360):
+        return 273.5617264 + 0.01765379968*Vt + 7.137919542e-9*Vt**2 + 6.116704187e-11*Vt**3
+    elif (Vt>=-1360 and Vt<=1640):
+        return 273.1534526 + 0.01705349031*Vt - 2.797508035e-7*Vt**2 + 1.501272037e-11*Vt**3
+    elif (Vt>=1640 and Vt<=4840):
+        return 273.1973681 + 0.01699032605*Vt - 2.448421881e-7*Vt**2 + 7.25590263e-12*Vt**3
+    elif (Vt>=4840 and Vt<=8400):
+        return 273.5651668 + 0.01676422623*Vt - 1.976262268e-7*Vt**2 + 3.906447737e-12*Vt**3
+    else:
+        raise ValueError("電圧値 {}V は変換範囲外です（-9500V から 8400V の範囲で入力してください）".format(Vt))
+
 def getPressure():
     """圧力センサーの電圧を取得し、圧力に変換
     
@@ -304,17 +330,25 @@ def getPressure():
         return None
 
 def getTemperature():
-    """温度センサーの電圧を取得
+    """温度センサーの電圧を取得し、温度に変換
     
     Returns:
-        float: 温度センサーの電圧値（V）
+        tuple: (電圧値（V）, 温度値（K）)
         None: 測定に失敗した場合
     """
     try:
         if not k2000_temperature.connected:
             k2000_temperature.connect()
             k2000_temperature.initialize()
-        return k2000_temperature.get_voltage()
+        
+        # 電圧を取得
+        voltage = k2000_temperature.get_voltage()
+        if voltage is None:
+            return None
+            
+        # 温度に変換（V → K）
+        temperature = VtToTemp(voltage)
+        return (voltage, temperature)
     except Exception as e:
         print("温度測定エラー: {}".format(e))
         return None
