@@ -331,8 +331,45 @@ def save_results_header(filename, experiment_data):
         # データヘッダーの保存
         f.write("set Temp. / K,time / s,dt of Kei2000/ microvolts,dt of Kei2182A/ microvolts,dt of Kei2000/K,dt of Kei2182A/K,Heat or cool,Run,Pressure / MPa\n")
 
+def check_current_status():
+    """現在の温度と圧力を確認"""
+    print("\n=== 現在の状態 ===")
+    try:
+        # Chinoの温度を取得
+        chino = ChinoController()
+        chino.connect()
+        chino_temp = chino.get_temperature()
+        print("Chino設定温度: {:.2f} K".format(chino_temp))
+    except Exception as e:
+        print("Chino温度取得エラー: {}".format(e))
+
+    try:
+        # Keithley 2000の電圧を取得して温度に変換
+        pv2000 = float(getTemperature())*1000000
+        k2000_temp = vttotemp.VtToTemp(pv2000)
+        print("Keithley 2000温度: {:.2f} K".format(k2000_temp))
+    except Exception as e:
+        print("Keithley 2000温度取得エラー: {}".format(e))
+
+    try:
+        # 圧力を取得
+        pressure_control = PressureControl()
+        current_pressure = pressure_control.get_pressure()
+        if current_pressure is not None:
+            print("現在の圧力: {:.2f} MPa".format(current_pressure))
+        else:
+            print("圧力取得エラー: 値が取得できません")
+        pressure_control.close()
+    except Exception as e:
+        print("圧力取得エラー: {}".format(e))
+
+    print("================\n")
+
 def main():
     try:
+        # 現在の状態を確認
+        check_current_status()
+        
         # 実験条件の設定
         experiment_data = {
             'sample_name': input("サンプル名を入力してください: "),
@@ -344,6 +381,24 @@ def main():
             'pressure': float(input("目標圧力 (MPa) を入力してください: ")),
             'pressure_tolerance': float(input("圧力許容範囲 (%) を入力してください: "))
         }
+
+        # 実験条件の確認
+        print("\n=== 実験条件 ===")
+        print("サンプル名: {}".format(experiment_data['sample_name']))
+        print("実験者: {}".format(experiment_data['experimenter']))
+        print("開始温度: {:.2f} K".format(experiment_data['start_temperature']))
+        print("終了温度: {:.2f} K".format(experiment_data['end_temperature']))
+        print("昇温速度: {:.2f} K/min".format(experiment_data['heating_rate']))
+        print("待機時間: {:.2f} min".format(experiment_data['wait_time']))
+        print("目標圧力: {:.2f} MPa".format(experiment_data['pressure']))
+        print("圧力許容範囲: {:.2f} %".format(experiment_data['pressure_tolerance']))
+        print("================\n")
+
+        # 実験開始の確認
+        confirm = input("実験を開始しますか？ (y/n): ")
+        if confirm.lower() != 'y':
+            print("実験を中止します。")
+            return
 
         # 実験マネージャーの初期化
         experiment_manager = ExperimentManager()
