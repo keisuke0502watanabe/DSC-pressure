@@ -364,20 +364,86 @@ def main():
             pressure_tolerance=experiment_data['pressure_tolerance']
         )
 
-        # ... rest of the code ...
-
-        # 結果の保存
-        with open(results_file, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Time (s)', 'Temperature (K)', 'Pressure (MPa)', 'Voltage (V)'])
-            for t, temp, press, volt in zip(time_data, temp_data, press_data, volt_data):
-                writer.writerow([t, temp, press, volt])
-
+        # デバイスの初期化
+        chino = ChinoController()
+        chino.connect()
+        pressure_control = PressureController()
+        
+        # 測定データの初期化
+        time_data = []
+        temp_data = []
+        press_data = []
+        volt_data = []
+        error_log = []
+        
+        # 測定開始
+        start_time = time.time()
+        current_temp = experiment_data['start_temperature']
+        target_temp = experiment_data['end_temperature']
+        heating_rate = experiment_data['heating_rate']
+        
+        while current_temp < target_temp:
+            try:
+                # 温度の更新
+                current_temp += heating_rate * (time.time() - start_time) / 60.0
+                chino.set_temperature(current_temp)
+                
+                # データの収集
+                current_time = time.time() - start_time
+                current_pressure = pressure_control.get_pressure()
+                current_voltage = keithley_control.getPv2000()
+                
+                # データの保存
+                time_data.append(current_time)
+                temp_data.append(current_temp)
+                press_data.append(current_pressure)
+                volt_data.append(current_voltage)
+                
+                # 結果の保存
+                with open(results_file, 'a', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([current_time, current_temp, current_pressure, current_voltage])
+                
+                time.sleep(1)  # 1秒待機
+                
+            except Exception as e:
+                error_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                error_log.append([error_time, "Measurement Error", str(e)])
+                print(f"測定エラー: {e}")
+                continue
+        
         # エラー情報の保存
         with open(error_file, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(['Time', 'Error Type', 'Message'])
             for error in error_log:
                 writer.writerow(error)
+        
+        # デバイスの終了処理
+        chino.disconnect()
+        pressure_control.close()
+        
+        print("測定が完了しました。")
+        
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+        traceback.print_exc()
+        
+        # エラーログの保存
+        if 'error_file' in locals():
+            with open(error_file, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Time', 'Error Type', 'Message'])
+                writer.writerow([datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                               "Fatal Error", str(e)])
+        
+        # デバイスの終了処理
+        if 'chino' in locals():
+            chino.disconnect()
+        if 'pressure_control' in locals():
+            pressure_control.close()
+        
+        raise  # エラーを再送出
 
-        # ... rest of the code ...
+if __name__ == "__main__":
+    main()
