@@ -86,6 +86,7 @@ class ChinoController:
             # 応答待ち
             response = ""
             comma_count = 0
+            i = 0
             while True:
                 if self.ser.in_waiting > 0:
                     recv_data = self.ser.read()
@@ -103,6 +104,7 @@ class ChinoController:
                                 print("応答全体: {}".format(response))
                                 return None
                     response += char
+                    i += 1
                     
                     if value == 10:  # LF
                         break
