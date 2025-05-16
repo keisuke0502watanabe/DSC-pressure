@@ -7,7 +7,7 @@ import traceback
 from natsort import natsorted
 from DTAmodule.keithley_control import getTemperature, getVoltage2182A
 from DTAmodule.chino_control import ChinoController
-from DTAmodule.pressure_control import PressureController
+from DTAmodule.pressure_control import PressureControl
 from DTAmodule.visualize import DTAVisualizer
 from DTAmodule.experiment_manager import ExperimentManager, ExperimentMetadata
 from DTAmodule.plotter import MenuDrivenPlotter
@@ -148,7 +148,7 @@ t3 = t0
 # 圧力制御の初期化
 pressure_control = None
 try:
-    pressure_control = PressureController()
+    pressure_control = PressureControl()
 except Exception as e:
     print("圧力制御の初期化に失敗しました: {}".format(e))
 
@@ -367,7 +367,7 @@ def main():
         # デバイスの初期化
         chino = ChinoController()
         chino.connect()
-        pressure_control = PressureController()
+        pressure_control = PressureControl()
         
         # 測定データの初期化
         time_data = []
