@@ -317,20 +317,23 @@ filenameError = filenameExpCond.replace('ExpCond.csv', 'Error.csv')
 
 # メインプログラムの開始部分を修正
 Q2 = input("Have you already measured? y/n:")
-if Q2 == 'y':
-    path='/home/pi/Desktop/Experiment_condition'
-    os.chdir(path)
-    list=os.listdir(path)
-    list=natsorted(list)
-    for i in range(len(list)):
-        print(str(i) + " : " + list[i])
-    
-    num = int(input("What is the number of the condition file?:"))
-    filenameExpCond = list[num]
-    filenameResults = filenameExpCond.replace('ExpCond.csv','Results.csv')
-    filenameError = filenameExpCond.replace('ExpCond.csv','Error.csv')
-#     filenameResults = filenameExpCond+'_Results.csv'
-#     filenameError = filenameExpCond+'Error.csv'
+if Q2 == "y":
+    print("Please input the number of the experiment you want to continue.")
+    print("The number is shown in the file name of the experiment.")
+    print("For example, if the file name is 'ExpCond_1.csv', the number is 1.")
+    print("If you want to start a new experiment, please input 'n'.")
+    Q3 = input("Please input the number or 'n':")
+    if Q3 == "n":
+        Q2 = "n"
+    else:
+        try:
+            exp_num = int(Q3)
+            filenameExpCond = "ExpCond_{}.csv".format(exp_num)
+            filenameResults = "Results_{}.csv".format(exp_num)
+            filenameError = "Error_{}.csv".format(exp_num)
+        except ValueError:
+            print("Invalid input. Starting a new experiment.")
+            Q2 = "n"
 
 elif Q2 == 'n':
     samplename = input("What is name of the samle :")
@@ -382,7 +385,7 @@ for k in range(1,len(line)):
     print(k,Tsv, Tf, rate, wait, dt, pressure, pressure_tolerance)
     timeExp=timeExp+abs((Tf[k]-Tsv[k])/rate[k])+wait[k]/60
     print(k, timeExp)
-timeExp=timeExp-wait[k]/60
+timeExp=timeExp-wait[len(line)-1]/60  # 最後のwait時間を引く
 print(timeExp)
 
 #csv sheet column settting
