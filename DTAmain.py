@@ -206,6 +206,7 @@ with open(filenameExpCond,'r') as file:
     line = [row for row in reader]
 #     print(len(line))
     
+# 実験条件の読み込みと表示
 for i in range(1,len(line)):
         print('exp. '+str(i) +' : ')
         print(line[i])
@@ -221,7 +222,7 @@ if not os.path.exists(filenameResults):
 
 
      
-#Read exp. condition
+# 実験条件の解析と設定値の計算
 Tsv=['Tsv']
 Tf=['Tf']
 rate=['rate']
@@ -277,6 +278,7 @@ visualizer = DTAVisualizer()
 # プロッターの初期化
 plotter = MenuDrivenPlotter()
 
+# 各実験条件での測定実行
 for k in range(1,len(line)):
     print("Run the measurement number " + str(k) +" ! Tsv= "+str(Tsv[k])+" K" )
     if k ==1:
