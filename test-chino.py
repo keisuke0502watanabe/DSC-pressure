@@ -46,12 +46,12 @@ class ChinoController:
             raise Exception("デバイスに接続されていません")
         
         try:
-            # コマンドを送信
-            self.ser.write((command + '\r\n').encode())
+            # コマンドを送信（ASCIIエンコーディング）
+            self.ser.write((command + '\r\n').encode('ascii'))
             time.sleep(0.1)
             
-            # 応答を読み取り
-            response = self.ser.readline().decode().strip()
+            # 応答を読み取り（ASCIIエンコーディング）
+            response = self.ser.readline().decode('ascii').strip()
             return response
         except Exception as e:
             print("コマンド送信エラー: {}".format(e))
@@ -66,6 +66,10 @@ class ChinoController:
             
             # 出力をオフ
             self.send_command("OUTP OFF")
+            time.sleep(0.1)
+            
+            # 温度単位をケルビンに設定
+            self.send_command("UNIT:TEMP K")
             time.sleep(0.1)
             
             return True
