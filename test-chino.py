@@ -18,12 +18,12 @@ class ChinoController:
         try:
             self.ser = serial.Serial(
                 port=self.port,
-                baudrate=9600,
-                bytesize=serial.EIGHTBITS,
-                parity=serial.PARITY_NONE,
+                baudrate=4800,
+                bytesize=serial.SEVENBITS,
+                parity=serial.PARITY_EVEN,
                 stopbits=serial.STOPBITS_ONE,
-                timeout=2,
-                write_timeout=2,
+                timeout=5,
+                write_timeout=5,
                 xonxoff=False,
                 rtscts=False,
                 dsrdtr=False
@@ -130,7 +130,7 @@ class ChinoController:
             temp (float): 設定温度（K）
         """
         try:
-            command = " 1, 1,{:8.1f}".format(temp)  # 温度設定コマンド
+            command = " 2, 4,1,{:8.1f},".format(temp)  # 温度設定コマンド
             self.send_command(command)
             time.sleep(0.1)
         except Exception as e:
