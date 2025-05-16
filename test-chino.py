@@ -139,35 +139,37 @@ class ChinoController:
             temp (float): 設定温度（K）
         """
         try:
-            # シリアルバッファをクリア
-            self.ser.reset_input_buffer()
-            self.ser.reset_output_buffer()
-            
             # STX
-            self.ser.write(bytes([0x02]))
-            
+            x = [0x02]
+            self.ser.write(x)
+
             # コマンド
-            command = " 2, 4,1," + str(temp) + ","
-            print("送信コマンド: {}".format(command))
-            self.ser.write(command.encode('ascii'))
+            y = " 2, 4,1," + str(temp) + ","
+            x = y.encode()
+            self.ser.write(x)
             
             # チェックサム計算
+            i = 0
             chkSum = 0
-            for char in command:
-                chkSum += ord(char)
-            chkSum += 3  # ETXの値
-            
+            for i in range(len(y)):
+                chkSum = chkSum + ord(y[i])
+
             # ETX
-            self.ser.write(bytes([0x03]))
-            
+            x = [0x03]
+            chkSum = chkSum + 3
+            self.ser.write(x)
+
             # チェックサム送信
-            hex_sum = hex(chkSum)[2:].upper().zfill(2)
-            chkSumValue = hex_sum[1] + hex_sum[0]
-            print("チェックサム: {}".format(chkSumValue))
-            self.ser.write(chkSumValue.encode('ascii'))
+            a = hex(chkSum)
+            chkSumU = a[-2:-1]
+            chkSumD = a[-1:]
+            chkSumValue = str.upper(chkSumD + chkSumU)
+            x = chkSumValue.encode()
+            self.ser.write(x)
             
             # CR+LF
-            self.ser.write(b'\r\n')
+            x = b'\r\n'
+            self.ser.write(x)
             
             # 応答待ち
             time.sleep(0.1)
@@ -176,14 +178,9 @@ class ChinoController:
             while True:
                 if self.ser.in_waiting > 0:
                     recv_data = self.ser.read()
-                    value = struct.unpack_from("B", recv_data, 0)[0]
-                    if value == 10:  # LF
+                    a = struct.unpack_from("B", recv_data, 0)
+                    if a[0] == 10:
                         break
-            
-            # 接続を閉じる
-            self.ser.close()
-            # 再接続
-            self.connect()
             
         except Exception as e:
             print("温度設定エラー: {}".format(e))
