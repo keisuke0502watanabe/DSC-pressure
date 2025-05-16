@@ -44,8 +44,8 @@ def main():
     """K2000を使用した電圧測定のテスト"""
     print("K2000電圧測定テストを開始します...")
     
-    # K2000のインスタンスを作成（ポートをttyUSB1に変更）
-    k2000 = Keithley2000Temperature(port='/dev/ttyUSB1')
+    # K2000のインスタンスを作成
+    k2000 = Keithley2000Temperature(port='/dev/ttyUSB2')
     reconnect_attempts = 0
     max_reconnect_attempts = 3
     
