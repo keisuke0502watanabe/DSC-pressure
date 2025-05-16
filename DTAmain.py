@@ -10,7 +10,7 @@ import traceback
 from natsort import natsorted
 # import gspread
 # from oauth2client.service_account import ServiceAccountCredentials
-from pressure_control import PressureControl
+from DTAmodule.pressure_control import PressureControl
 from DTAmodule.visualize import DTAVisualizer
 from DTAmodule.experiment_manager import ExperimentManager, ExperimentMetadata
 from collections import deque
