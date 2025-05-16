@@ -382,7 +382,7 @@ for k in range(1,len(line)):
     print(k,Tsv, Tf, rate, wait, dt, pressure, pressure_tolerance)
     timeExp=timeExp+abs((Tf[k]-Tsv[k])/rate[k])+wait[k]/60
     print(k, timeExp)
-timeExp=timeExp-wait[len(line)-1]/60  # 最後のwait時間を引く
+timeExp=timeExp-float(wait[len(line)-1])/60  # 最後のwait時間を引く
 print(timeExp)
 
 #csv sheet column settting
