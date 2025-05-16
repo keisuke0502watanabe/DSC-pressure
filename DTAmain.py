@@ -7,7 +7,6 @@ import threading
 import csv
 import os
 import vttotemp
-import am
 import traceback
 from natsort import natsorted
 import gspread
