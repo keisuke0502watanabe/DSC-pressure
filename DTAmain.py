@@ -728,16 +728,6 @@ for k in range(1,len(line)):
                     pressure_control.set_target_pressure(pressure[k], tolerance=tolerance)
         
         # 結果の記録
-        f = open(str(filenameResults), mode='a')
-        if rate[k] > 0:
-                    hoc = "heat"
-        elif rate[k] < 0:
-                    hoc = "cool"
-        
-        pressure_str = "{:.3f}".format(current_pressure) if current_pressure is not None else "N/A"
-        print(k, datetime.datetime.now(), round(Tsvtemp,3), round(t1-t0,3), pv2000, pv2182A, 
-              vttotemp.VtToTemp(pv2000), vttotemp.VtToTemp(pv2182A), pressure_str)
-        
         try:
             # 初回のみヘッダーを保存
             if not os.path.exists(filenameResults):
@@ -748,15 +738,15 @@ for k in range(1,len(line)):
                     'experimenter': input("実験者名を入力してください: ")
                 })
             
-            # データの記録（Date, Time of Day, Sample Nameの列を削除）
+            # データの記録
             result = "{:.3f}\t{:.3f}\t{:.10f}\t{:.10f}\t{:.10f}\t{:.10f}\t{}\t{}\t{:.3f}\n".format(
                 float(Tsvtemp), float(t1-t0), pv2000, pv2182A, 
                 vttotemp.VtToTemp(pv2000), vttotemp.VtToTemp(pv2182A),
                 hoc, k, current_pressure if current_pressure is not None else 0.0
             )
-        f.write(result)
+            f.write(result)
             
-            # スプレッドシートへのデータ追加（メタデータを含む）
+            # スプレッドシートへのデータ追加
             spreadsheet_manager.add_data({
                 'temperature': float(Tsvtemp),
                 'time': float(t1-t0),
@@ -769,12 +759,12 @@ for k in range(1,len(line)):
                 'pressure': current_pressure if current_pressure is not None else 0.0
             })
             
-            # データの収集（グラフ更新はキーボード入力で行う）
+            # データの収集
             plotter.update_data(
                 float(t1-t0),
-                float(Tsvtemp),  # Chinoの温度
-                vttotemp.VtToTemp(pv2000),  # K2000の温度
-                vttotemp.VtToTemp(pv2182A),  # DTA信号
+                float(Tsvtemp),
+                vttotemp.VtToTemp(pv2000),
+                vttotemp.VtToTemp(pv2182A),
                 current_pressure if current_pressure is not None else 0.0
             )
             
