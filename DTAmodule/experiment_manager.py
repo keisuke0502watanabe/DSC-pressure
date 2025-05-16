@@ -3,185 +3,170 @@ import os
 from datetime import datetime
 import pandas as pd
 import csv
+from typing import Dict, List, Optional
 
 class ExperimentManager:
-    def __init__(self, config_dir="Experiment_condition"):
-        """実験条件を管理するクラス
-        
-        Args:
-            config_dir (str): 設定ファイルの保存ディレクトリ
-        """
-        self.config_dir = config_dir
-        self.config_file = os.path.join(config_dir, "experiment_config.json")
-        self.history_file = os.path.join(config_dir, "experiment_history.json")
-        os.makedirs(config_dir, exist_ok=True)
-        
-        # 設定ファイルの初期化
-        if not os.path.exists(self.config_file):
-            self._initialize_config()
-        
-        # 履歴ファイルの初期化
-        if not os.path.exists(self.history_file):
-            self._initialize_history()
+    def __init__(self):
+        self.experiment_dir = "Experimental_result"
+        self._ensure_experiment_directory()
+        self.history_file = os.path.join(self.experiment_dir, "experiment_history.json")
+        self._load_history()
     
-    def _initialize_config(self):
-        """設定ファイルの初期化"""
-        config = {
-            "last_experiment": None,
-            "default_conditions": {
-                "heating_rate": 5.0,  # K/min
-                "pressure_tolerance": 1.0,  # %
-                "wait_time": 10  # min
-            }
-        }
-        with open(self.config_file, 'w') as f:
-            json.dump(config, f, indent=4)
+    def _ensure_experiment_directory(self):
+        """実験結果ディレクトリの存在確認と作成"""
+        if not os.path.exists(self.experiment_dir):
+            os.makedirs(self.experiment_dir)
     
-    def _initialize_history(self):
-        """履歴ファイルの初期化"""
-        history = {
-            "experiments": []
-        }
-        with open(self.history_file, 'w') as f:
-            json.dump(history, f, indent=4)
-    
-    def get_experiment_conditions(self):
-        """実験条件の取得
-        
-        Returns:
-            dict: 実験条件
-        """
-        with open(self.config_file, 'r') as f:
-            config = json.load(f)
-        return config
-    
-    def save_experiment_conditions(self, conditions):
-        """実験条件の保存
-        
-        Args:
-            conditions (dict): 実験条件
-        """
-        with open(self.config_file, 'w') as f:
-            json.dump(conditions, f, indent=4)
-    
-    def add_experiment_history(self, experiment_data, experiment_id=None):
-        """実験履歴の追加
-        
-        Args:
-            experiment_data (dict): 実験データ
-            experiment_id (int, optional): 指定する実験ID
-        
-        Returns:
-            int: 実験ID
-        """
-        with open(self.history_file, 'r') as f:
-            history = json.load(f)
-        
-        # 実験IDの生成または指定
-        if experiment_id is None:
-            # 自動生成の場合、最大ID + 1を使用
-            existing_ids = [exp.get("id", 0) for exp in history["experiments"]]
-            experiment_id = max(existing_ids, default=0) + 1
-        else:
-            # 指定されたIDが既に存在する場合はエラー
-            if any(exp.get("id") == experiment_id for exp in history["experiments"]):
-                raise ValueError("指定された実験IDは既に使用されています")
-        
-        experiment_data["id"] = experiment_id
-        experiment_data["timestamp"] = datetime.now().isoformat()
-        
-        history["experiments"].append(experiment_data)
-        
-        with open(self.history_file, 'w') as f:
-            json.dump(history, f, indent=4)
-        
-        return experiment_id
-    
-    def get_experiment_history(self):
-        """実験履歴の取得
-        
-        Returns:
-            list: 実験履歴のリスト
-        """
-        with open(self.history_file, 'r') as f:
-            history = json.load(f)
-        return history["experiments"]
-    
-    def get_experiment_by_id(self, experiment_id):
-        """IDによる実験データの取得
+    def _get_experiment_dir(self, experiment_id: int) -> str:
+        """実験IDに対応するディレクトリパスを取得
         
         Args:
             experiment_id (int): 実験ID
-        
+            
         Returns:
-            dict: 実験データ
+            str: 実験ディレクトリのパス
         """
-        history = self.get_experiment_history()
-        for exp in history:
-            if exp["id"] == experiment_id:
-                return exp
-        return None
+        exp_dir = os.path.join(self.experiment_dir, str(experiment_id))
+        if not os.path.exists(exp_dir):
+            os.makedirs(exp_dir)
+        return exp_dir
     
-    def get_next_available_id(self):
-        """次に使用可能な実験IDを取得
-        
-        Returns:
-            int: 次に使用可能な実験ID
-        """
-        history = self.get_experiment_history()
-        existing_ids = [exp.get("id", 0) for exp in history["experiments"]]
-        return max(existing_ids, default=0) + 1
-    
-    def create_experiment_condition_file(self, experiment_data):
+    def create_experiment_condition_file(self, experiment_data: Dict) -> str:
         """実験条件ファイルの作成
         
         Args:
-            experiment_data (dict): 実験データ
+            experiment_data (Dict): 実験データ
+            
+        Returns:
+            str: 作成したファイルのパス
+        """
+        experiment_id = self.get_next_available_id()
+        exp_dir = self._get_experiment_dir(experiment_id)
+        filename = os.path.join(exp_dir, f"ExpCond_{experiment_id}.csv")
+        
+        with open(filename, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Sample Name', 'Experimenter', 'Start Temperature', 'End Temperature', 
+                           'Heating Rate', 'Wait Time', 'Pressure', 'Pressure Tolerance'])
+            writer.writerow([
+                experiment_data['sample_name'],
+                experiment_data['experimenter'],
+                experiment_data['start_temperature'],
+                experiment_data['end_temperature'],
+                experiment_data['heating_rate'],
+                experiment_data['wait_time'],
+                experiment_data['pressure'],
+                experiment_data['pressure_tolerance']
+            ])
+        
+        return filename
+    
+    def get_results_file_path(self, experiment_id: int) -> str:
+        """結果ファイルのパスを取得
+        
+        Args:
+            experiment_id (int): 実験ID
+            
+        Returns:
+            str: 結果ファイルのパス
+        """
+        exp_dir = self._get_experiment_dir(experiment_id)
+        return os.path.join(exp_dir, f"Results_{experiment_id}.csv")
+    
+    def get_error_file_path(self, experiment_id: int) -> str:
+        """エラーファイルのパスを取得
+        
+        Args:
+            experiment_id (int): 実験ID
+            
+        Returns:
+            str: エラーファイルのパス
+        """
+        exp_dir = self._get_experiment_dir(experiment_id)
+        return os.path.join(exp_dir, f"Error_{experiment_id}.csv")
+    
+    def _load_history(self):
+        """実験履歴の読み込み"""
+        if os.path.exists(self.history_file):
+            with open(self.history_file, 'r') as f:
+                self.history = json.load(f)
+        else:
+            self.history = []
+    
+    def _save_history(self):
+        """実験履歴の保存"""
+        with open(self.history_file, 'w') as f:
+            json.dump(self.history, f, indent=4)
+    
+    def get_next_available_id(self) -> int:
+        """次の利用可能な実験IDを取得
         
         Returns:
-            str: 作成されたファイルのパス
+            int: 次の実験ID
         """
-        # ファイル名の生成
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = "{}_{}_ExpCond.csv".format(experiment_data['sample_name'], timestamp)
-        filepath = os.path.join(self.config_dir, filename)
+        if not self.history:
+            return 1
+        return max(exp['id'] for exp in self.history) + 1
+    
+    def add_experiment_history(self, experiment_data: Dict, experiment_id: Optional[int] = None) -> int:
+        """実験履歴に追加
         
-        # ヘッダーの作成
-        headers = [
-            "Run", "Tsv (K)", "Tf (K)", "Rate (K/min)", "Wait (min)",
-            "Pressure (MPa)", "Pressure Tolerance (%)"
-        ]
+        Args:
+            experiment_data (Dict): 実験データ
+            experiment_id (Optional[int]): 実験ID（指定がない場合は自動生成）
+            
+        Returns:
+            int: 実験ID
+        """
+        if experiment_id is None:
+            experiment_id = self.get_next_available_id()
         
-        # データフレームの作成
-        df = pd.DataFrame(columns=headers)
+        experiment_record = {
+            'id': experiment_id,
+            'sample_name': experiment_data['sample_name'],
+            'experimenter': experiment_data['experimenter'],
+            'timestamp': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'start_temperature': experiment_data['start_temperature'],
+            'end_temperature': experiment_data['end_temperature'],
+            'heating_rate': experiment_data['heating_rate'],
+            'wait_time': experiment_data['wait_time'],
+            'pressure': experiment_data['pressure'],
+            'pressure_tolerance': experiment_data['pressure_tolerance']
+        }
         
-        # 温度プロファイルの生成
-        start_temp = experiment_data["start_temperature"]
-        end_temp = experiment_data["end_temperature"]
-        heating_rate = experiment_data["heating_rate"]
-        wait_time = experiment_data["wait_time"]
+        self.history.append(experiment_record)
+        self._save_history()
+        return experiment_id
+    
+    def get_experiment_history(self) -> List[Dict]:
+        """実験履歴の取得
         
-        # 昇温プロファイル
-        current_temp = start_temp
-        run_number = 1
+        Returns:
+            List[Dict]: 実験履歴のリスト
+        """
+        return self.history
+    
+    def get_experiment_by_id(self, experiment_id: int) -> Optional[Dict]:
+        """実験IDから実験データを取得
         
-        while current_temp < end_temp:
-            next_temp = min(current_temp + 50, end_temp)  # 50Kごとに区切る
-            df.loc[len(df)] = [
-                run_number,
-                current_temp,
-                next_temp,
-                heating_rate,
-                wait_time,
-                experiment_data["pressure"],
-                experiment_data["pressure_tolerance"]
-            ]
-            current_temp = next_temp
-            run_number += 1
+        Args:
+            experiment_id (int): 実験ID
+            
+        Returns:
+            Optional[Dict]: 実験データ（存在しない場合はNone）
+        """
+        for exp in self.history:
+            if exp['id'] == experiment_id:
+                return exp
+        return None
+    
+    def get_current_experiment_id(self) -> int:
+        """現在の実験IDを取得
         
-        # ファイルの保存
-        df.to_csv(filepath, index=False)
-        return filepath
+        Returns:
+            int: 現在の実験ID
+        """
+        return self.get_next_available_id() - 1
 
 class ExperimentMetadata:
     def __init__(self, metadata_file="Experiment_result/experiment_metadata.json"):

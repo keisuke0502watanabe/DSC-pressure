@@ -330,3 +330,54 @@ def save_results_header(filename, experiment_data):
         
         # データヘッダーの保存
         f.write("set Temp. / K,time / s,dt of Kei2000/ microvolts,dt of Kei2182A/ microvolts,dt of Kei2000/K,dt of Kei2182A/K,Heat or cool,Run,Pressure / MPa\n")
+
+def main():
+    try:
+        # 実験条件の設定
+        experiment_data = {
+            'sample_name': input("サンプル名を入力してください: "),
+            'experimenter': input("実験者名を入力してください: "),
+            'start_temperature': float(input("開始温度 (K) を入力してください: ")),
+            'end_temperature': float(input("終了温度 (K) を入力してください: ")),
+            'heating_rate': float(input("昇温速度 (K/min) を入力してください: ")),
+            'wait_time': float(input("待機時間 (min) を入力してください: ")),
+            'pressure': float(input("目標圧力 (MPa) を入力してください: ")),
+            'pressure_tolerance': float(input("圧力許容範囲 (%) を入力してください: "))
+        }
+
+        # 実験マネージャーの初期化
+        experiment_manager = ExperimentManager()
+        
+        # 実験IDの取得と実験条件ファイルの作成
+        experiment_id = experiment_manager.add_experiment_history(experiment_data)
+        exp_cond_file = experiment_manager.create_experiment_condition_file(experiment_data)
+        results_file = experiment_manager.get_results_file_path(experiment_id)
+        error_file = experiment_manager.get_error_file_path(experiment_id)
+
+        # 実験条件の設定
+        conditions = ExperimentConditions(
+            start_temp=experiment_data['start_temperature'],
+            end_temp=experiment_data['end_temperature'],
+            heating_rate=experiment_data['heating_rate'],
+            wait_time=experiment_data['wait_time'],
+            pressure=experiment_data['pressure'],
+            pressure_tolerance=experiment_data['pressure_tolerance']
+        )
+
+        # ... rest of the code ...
+
+        # 結果の保存
+        with open(results_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Time (s)', 'Temperature (K)', 'Pressure (MPa)', 'Voltage (V)'])
+            for t, temp, press, volt in zip(time_data, temp_data, press_data, volt_data):
+                writer.writerow([t, temp, press, volt])
+
+        # エラー情報の保存
+        with open(error_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Time', 'Error Type', 'Message'])
+            for error in error_log:
+                writer.writerow(error)
+
+        # ... rest of the code ...
