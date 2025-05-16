@@ -9,8 +9,8 @@ import os
 import vttotemp
 import traceback
 from natsort import natsorted
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+# import gspread
+# from oauth2client.service_account import ServiceAccountCredentials
 from pressure_control import PressureControl
 from DTAmodule.visualize import DTAVisualizer
 from DTAmodule.experiment_manager import ExperimentManager, ExperimentMetadata
@@ -19,12 +19,12 @@ import keyboard
 import matplotlib.pyplot as plt
 
 #鍵 
-key_name = '/home/pi/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json'
-sheet_name = 'teruyama test1'
-#APIにログイン
-scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-credentials = ServiceAccountCredentials.from_json_keyfile_name(key_name, scope)
-gc = gspread.authorize(credentials)
+# key_name = '/home/pi/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json'
+# sheet_name = 'teruyama test1'
+# #APIにログイン
+# scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
+# credentials = ServiceAccountCredentials.from_json_keyfile_name(key_name, scope)
+# gc = gspread.authorize(credentials)
 
 # 実験管理システムの初期化
 experiment_manager = ExperimentManager()
@@ -65,12 +65,12 @@ class SpreadsheetManager:
     def initialize_sheet(self):
         """スプレッドシートの初期化"""
         try:
-            scope = ['https://spreadsheets.google.com/feeds',
-                    'https://www.googleapis.com/auth/drive']
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                self.key_name, scope)
-            gc = gspread.authorize(credentials)
-            self.wks = gc.open(self.sheet_name).sheet1
+            # scope = ['https://spreadsheets.google.com/feeds',
+            #         'https://www.googleapis.com/auth/drive']
+            # credentials = ServiceAccountCredentials.from_json_keyfile_name(
+            #     self.key_name, scope)
+            # gc = gspread.authorize(credentials)
+            self.wks = None
             self.set_column_headers()
             self.connection_error = False
             self.retry_count = 0
@@ -81,88 +81,15 @@ class SpreadsheetManager:
     
     def set_column_headers(self):
         """カラムヘッダーの設定"""
-        headers = {
-            'A1': 'set Temp. / K',
-            'B1': 'time / s',
-            'C1': 'dt of Kei2000/ microvolts',
-            'D1': 'dt of Kei2182A/ microvolts',
-            'E1': 'dt of Kei2000/K',
-            'F1': 'dt of Kei2182A/K',
-            'G1': 'Heat or cool',
-            'H1': 'Run',
-            'I1': 'Date',
-            'J1': 'Date time',
-            'K1': 'Sample name',
-            'L1': 'Pressure / MPa'
-        }
-        for cell, value in headers.items():
-            self.wks.update_acell(cell, value)
+        pass  # 一時的に無効化
     
     def add_data(self, data):
-        """データのバッファへの追加
-        
-        Args:
-            data (dict): 追加するデータ
-        """
-        self.buffer.append(data)
-        
-        # バッファが一杯になったか、更新間隔が経過した場合に更新
-        current_time = time.time()
-        if (len(self.buffer) >= SPREADSHEET_BUFFER_SIZE or 
-            current_time - self.last_update >= SPREADSHEET_UPDATE_INTERVAL):
-            self.flush()
+        """データのバッファへの追加"""
+        pass  # 一時的に無効化
     
     def flush(self):
         """バッファのデータをスプレッドシートに書き込む"""
-        if not self.buffer:
-            return
-        
-        if self.connection_error:
-            print("スプレッドシートへの接続エラーが発生しています。データはローカルに保存されています。")
-            return
-        
-        try:
-            # データの準備
-            rows = []
-            for data in self.buffer:
-                row = [
-                    data['temperature'],
-                    data['time'],
-                    data['pv2000'],
-                    data['pv2182A'],
-                    data['temp2000'],
-                    data['temp2182A'],
-                    data['heat_or_cool'],
-                    data['run'],
-                    data['pressure']
-                ]
-                rows.append(row)
-            
-            # 一括更新
-            cell_range = 'A{}:I{}'.format(
-                self.sheet_pointer,
-                self.sheet_pointer + len(rows) - 1
-            )
-            self.wks.update(cell_range, rows)
-            
-            # ポインタの更新
-            self.sheet_pointer += len(rows)
-            
-            # バッファのクリアと最終更新時刻の更新
-            self.buffer.clear()
-            self.last_update = time.time()
-            self.retry_count = 0
-            
-        except Exception as e:
-            self.retry_count += 1
-            if self.retry_count >= self.max_retries:
-                self.connection_error = True
-                print("スプレッドシートへの接続が失敗しました。データはローカルに保存されています。")
-                self._log_error("スプレッドシート更新エラー", e)
-            else:
-                print("スプレッドシート更新エラー: {} (リトライ {}/{})".format(
-                    e, self.retry_count, self.max_retries))
-                time.sleep(self.retry_delay)
+        pass  # 一時的に無効化
     
     def _log_error(self, error_type, error):
         """エラーをログファイルに記録
@@ -373,7 +300,7 @@ def ambTh(t0, t1, pv2182A, pv2000, filenameError):
 cell_list=[]
 sheet_pointer =2
 list_pointer = 0
-wks = gc.open(sheet_name).sheet1
+wks = None
 thread1 = threading.Thread(target=columnSet, args=(wks,))
 thread2 = threading.Thread(target=wksUpdate, args=(wks,cell_list,))
 
