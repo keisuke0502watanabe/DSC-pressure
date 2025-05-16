@@ -173,16 +173,12 @@ class ChinoController:
             time.sleep(0.1)
             
             # 応答を読み取り
-            response = ""
-            while self.ser.in_waiting > 0:
-                recv_data = self.ser.read()
-                value = struct.unpack_from("B", recv_data, 0)[0]
-                char = chr(value)
-                response += char
-                if value == 10:  # LF
-                    break
-            
-            print("応答: {}".format(response))
+            while True:
+                if self.ser.in_waiting > 0:
+                    recv_data = self.ser.read()
+                    value = struct.unpack_from("B", recv_data, 0)[0]
+                    if value == 10:  # LF
+                        break
             
         except Exception as e:
             print("温度設定エラー: {}".format(e))
