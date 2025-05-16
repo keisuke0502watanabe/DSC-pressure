@@ -4,6 +4,7 @@
 import serial
 import time
 import sys
+import struct
 
 class ChinoController:
     """Chino制御クラス"""
@@ -40,19 +41,68 @@ class ChinoController:
             self.ser.close()
         self.connected = False
 
+    def calculate_checksum(self, data):
+        """チェックサムを計算
+        
+        Args:
+            data (str): チェックサムを計算するデータ
+            
+        Returns:
+            str: チェックサム値（16進数文字列）
+        """
+        chkSum = 0
+        for char in data:
+            chkSum += ord(char)
+        chkSum += 3  # ETXの値
+        
+        # 16進数に変換し、上位バイトと下位バイトを入れ替え
+        hex_sum = hex(chkSum)[2:].upper().zfill(2)
+        return hex_sum[1] + hex_sum[0]
+
     def send_command(self, command):
         """コマンドを送信して応答を取得"""
         if not self.connected:
             raise Exception("デバイスに接続されていません")
         
         try:
-            # コマンドを送信（ASCIIエンコーディング）
-            self.ser.write((command + '\r\n').encode('ascii'))
-            time.sleep(0.1)
+            # STX
+            self.ser.write(bytes([0x02]))
             
-            # 応答を読み取り（ASCIIエンコーディング）
-            response = self.ser.readline().decode('ascii').strip()
-            return response
+            # コマンド
+            self.ser.write(command.encode('ascii'))
+            
+            # チェックサム計算
+            chkSum = self.calculate_checksum(command)
+            
+            # ETX
+            self.ser.write(bytes([0x03]))
+            
+            # チェックサム送信
+            self.ser.write(chkSum.encode('ascii'))
+            
+            # CR+LF
+            self.ser.write(b'\r\n')
+            
+            # 応答待ち
+            response = ""
+            comma_count = 0
+            while True:
+                if self.ser.in_waiting > 0:
+                    recv_data = self.ser.read()
+                    value = struct.unpack_from("B", recv_data, 0)[0]
+                    char = chr(value)
+                    
+                    if char == ",":
+                        comma_count += 1
+                        if comma_count == 5:  # PV値の位置
+                            pv = response[14:23]
+                            return float(pv)
+                    response += char
+                    
+                    if value == 10:  # LF
+                        break
+            
+            return None
         except Exception as e:
             print("コマンド送信エラー: {}".format(e))
             return None
@@ -61,15 +111,11 @@ class ChinoController:
         """初期化"""
         try:
             # リセット
-            self.send_command("*RST")
+            self.send_command(" 1, 0,")  # リセットコマンド
             time.sleep(0.5)
             
             # 出力をオフ
-            self.send_command("OUTP OFF")
-            time.sleep(0.1)
-            
-            # 温度単位をケルビンに設定
-            self.send_command("UNIT:TEMP K")
+            self.send_command(" 1, 2,")  # 出力オフコマンド
             time.sleep(0.1)
             
             return True
@@ -84,7 +130,7 @@ class ChinoController:
             temp (float): 設定温度（K）
         """
         try:
-            command = "SOUR:TEMP {:.1f}".format(temp)
+            command = " 1, 1,{:8.1f}".format(temp)  # 温度設定コマンド
             self.send_command(command)
             time.sleep(0.1)
         except Exception as e:
@@ -98,10 +144,8 @@ class ChinoController:
             None: 測定に失敗した場合
         """
         try:
-            response = self.send_command("MEAS:TEMP?")
-            if response:
-                return float(response)
-            return None
+            command = " 1, 1,"  # 温度取得コマンド
+            return self.send_command(command)
         except Exception as e:
             print("温度取得エラー: {}".format(e))
             return None
@@ -109,7 +153,7 @@ class ChinoController:
     def output_on(self):
         """出力をオン"""
         try:
-            self.send_command("OUTP ON")
+            self.send_command(" 1, 1,")  # 出力オンコマンド
             time.sleep(0.1)
         except Exception as e:
             print("出力オンエラー: {}".format(e))
@@ -117,7 +161,7 @@ class ChinoController:
     def output_off(self):
         """出力をオフ"""
         try:
-            self.send_command("OUTP OFF")
+            self.send_command(" 1, 2,")  # 出力オフコマンド
             time.sleep(0.1)
         except Exception as e:
             print("出力オフエラー: {}".format(e))
