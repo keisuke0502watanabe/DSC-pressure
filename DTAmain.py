@@ -5,7 +5,7 @@ import threading
 import csv
 import traceback
 from natsort import natsorted
-from DTAmodule.keithley_control import getPv2000, getPv2182A
+from DTAmodule.keithley_control import getTemperature, getVoltage2182A
 from DTAmodule.chino_control import ChinoController
 from DTAmodule.pressure_control import PressureController
 from DTAmodule.visualize import DTAVisualizer
@@ -71,7 +71,7 @@ except Exception as e:
 
 try:
     # Keithley 2000の電圧を取得して温度に変換
-    pv2000 = float(getPv2000())*1000000
+    pv2000 = float(getTemperature())*1000000
     k2000_temp = vttotemp.VtToTemp(pv2000)
     print("Keithley 2000温度: {:.2f} K".format(k2000_temp))
 except Exception as e:
@@ -193,8 +193,8 @@ for k in range(1,len(line)):
                     chino.set_temperature(Tsvtemp)
             
             t1 = time.time()
-            pv2000 = float(getPv2000())*1000000
-            pv2182A = float(getPv2182A())*1000000
+            pv2000 = float(getTemperature())*1000000
+            pv2182A = float(getVoltage2182A())*1000000
             vttotemp.VtToTemp(pv2000)
             a = vttotemp.VtToTemp(pv2000)
             vttotemp.VtToTemp(pv2182A)
@@ -391,7 +391,7 @@ def main():
                 # データの収集
                 current_time = time.time() - start_time
                 current_pressure = pressure_control.get_pressure()
-                current_voltage = getPv2000()
+                current_voltage = getTemperature()
                 
                 # データの保存
                 time_data.append(current_time)
