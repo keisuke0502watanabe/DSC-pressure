@@ -100,12 +100,14 @@ class ChinoController:
                                 return float(pv)
                             except ValueError:
                                 print("温度値の変換に失敗しました: {}".format(pv))
+                                print("応答全体: {}".format(response))
                                 return None
                     response += char
                     
                     if value == 10:  # LF
                         break
             
+            print("応答が受信できませんでした")
             return None
         except Exception as e:
             print("コマンド送信エラー: {}".format(e))
@@ -151,7 +153,7 @@ class ChinoController:
             command = " 1, 1,"  # 温度取得コマンド
             temp = self.send_command(command)
             if temp is not None:
-                print("取得した温度値: {}".format(temp))
+                print("取得した温度値: {}K".format(temp))
             return temp
         except Exception as e:
             print("温度取得エラー: {}".format(e))
