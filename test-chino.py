@@ -139,6 +139,10 @@ class ChinoController:
             temp (float): 設定温度（K）
         """
         try:
+            # シリアルバッファをクリア
+            self.ser.reset_input_buffer()
+            self.ser.reset_output_buffer()
+            
             # STX
             self.ser.write(bytes([0x02]))
             
@@ -191,6 +195,10 @@ class ChinoController:
             None: 測定に失敗した場合
         """
         try:
+            # シリアルバッファをクリア
+            self.ser.reset_input_buffer()
+            self.ser.reset_output_buffer()
+            
             command = " 1, 1,"  # 温度取得コマンド
             temp = self.send_command(command)
             if temp is not None:
