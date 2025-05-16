@@ -1,4 +1,4 @@
-import Keigetpv
+import keithley_control
 from DTAmodule.chino_control import ChinoController
 import time
 import datetime
@@ -592,8 +592,8 @@ for k in range(1,len(line)):
                 chino.set_temperature(Tsvtemp)
         
         t1 = time.time()
-        pv2000 = float(Keigetpv.getPv2000())*1000000
-        pv2182A = float(Keigetpv.getPv2182A())*1000000
+        pv2000 = float(keithley_control.getPv2000())*1000000
+        pv2182A = float(keithley_control.getPv2182A())*1000000
         vttotemp.VtToTemp(pv2000)
         a = vttotemp.VtToTemp(pv2000)
         vttotemp.VtToTemp(pv2182A)
