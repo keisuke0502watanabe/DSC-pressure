@@ -162,53 +162,6 @@ def get_experiment_conditions():
         print("無効な選択です")
         return get_experiment_conditions()
 
-def columnSet(wks):
-    cell_number1 = 'A1'
-    input_value1 = 'set Temp. / K'
-    #wks = gc.open(sheet_name).sheet1
-    wks.update_acell(cell_number1, input_value1)
-    cell_number2 = 'B1'
-    input_value2 = 'time / s'
-    wks.update_acell(cell_number2, input_value2)
-    cell_number3 = 'C1'
-    input_value3 = 'dt of Kei2000/ microvolts'
-    wks.update_acell(cell_number3, input_value3)
-    cell_number4 = 'D1'
-    input_value4 = 'dt of Kei2182A/ microvolts'
-    wks.update_acell(cell_number4, input_value4)
-    cell_number5 = 'E1'
-    input_value5 = 'dt of Kei2000/K'
-    wks.update_acell(cell_number5, input_value5)
-    cell_number6 = 'F1'
-    input_value6 = 'dt of Kei2182A/K'
-    wks.update_acell(cell_number6, input_value6)
-    cell_number7 = 'G1'
-    input_value7 = 'Heat or cool '
-    wks.update_acell(cell_number7, input_value7)
-    cell_number8 = 'H1'
-    input_value8 = 'Run'
-    wks.update_acell(cell_number8, input_value8)
-    cell_number9 = 'I1'
-    input_value9 = 'Date'
-    wks.update_acell(cell_number9, input_value9)
-    cell_number10 = 'J1'
-    input_value10 = 'Date time'
-    wks.update_acell(cell_number10, input_value10)
-    cell_number11 = 'K1'
-    input_value11 = 'Sample name'
-    wks.update_acell(cell_number11, input_value11)
-    cell_list = wks.range('A2:K11')
-
-def wksUpdate(wks,cell_list):
-    wks.update_cells(cell_list)
-
-def cellListUpdate(wks,sheet_pointer):
-            try:
-                cell_list = wks.range('A'+str(sheet_pointer)+':K'+str(sheet_pointer+9))                
-            except:
-                wks.add_rows(10000)
-                cell_list = wks.range('A'+str(sheet_pointer)+':K'+str(sheet_pointer+9))
-
 # 以下本文
 m = 1
 text = []
@@ -296,10 +249,6 @@ for k in range(1,len(line)):
         raise
 timeExp=timeExp-float(wait[len(line)-1])/60  # 最後のwait時間を引く
 print(timeExp)
-
-#csv sheet column settting
-    #if i == 0:
-
 
 #change temp. to first Tsv
 chino = ChinoController()
