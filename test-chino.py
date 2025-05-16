@@ -180,6 +180,11 @@ class ChinoController:
                     if value == 10:  # LF
                         break
             
+            # 接続を閉じる
+            self.ser.close()
+            # 再接続
+            self.connect()
+            
         except Exception as e:
             print("温度設定エラー: {}".format(e))
 
