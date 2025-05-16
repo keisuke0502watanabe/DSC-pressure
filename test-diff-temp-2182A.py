@@ -24,15 +24,15 @@ def check_2182a_settings(k2182a):
         print("機器情報: {}".format(idn))
         
         # 現在の測定モード
-        func = k2182a.send_command("FUNC?")
+        func = k2182a.send_command("SENS:FUNC?")
         print("測定モード: {}".format(func))
         
         # 測定範囲
-        range_val = k2182a.send_command("VOLT:DC:RANG?")
+        range_val = k2182a.send_command("SENS:VOLT:DC:RANG?")
         print("測定範囲: {}".format(range_val))
         
         # ノイズ低減設定
-        nplc = k2182a.send_command("VOLT:DC:NPLC?")
+        nplc = k2182a.send_command("SENS:VOLT:DC:NPLC?")
         print("NPLC設定: {}".format(nplc))
         
         return True
@@ -45,7 +45,7 @@ def main():
     print("2182A電圧測定テストを開始します...")
     
     # 2182Aのインスタンスを作成
-    k2182a = Keithley2182A(port='/dev/ttyUSB2')
+    k2182a = Keithley2182A(port='/dev/ttyUSB1')
     reconnect_attempts = 0
     max_reconnect_attempts = 3
     

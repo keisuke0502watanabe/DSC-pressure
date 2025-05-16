@@ -244,15 +244,15 @@ class Keithley2182A:
             time.sleep(0.5)  # リセット後の待機時間を延長
             
             # DC電圧測定モードに設定
-            self.send_command("FUNC 'VOLT:DC'")
+            self.send_command("SENS:FUNC 'VOLT:DC'")
             time.sleep(0.2)
             
             # ノイズ低減設定
-            self.send_command("VOLT:DC:NPLC 1")
+            self.send_command("SENS:VOLT:DC:NPLC 1")
             time.sleep(0.1)
             
             # 測定範囲を自動に設定
-            self.send_command("VOLT:DC:RANG:AUTO ON")
+            self.send_command("SENS:VOLT:DC:RANG:AUTO ON")
             time.sleep(0.1)
             
             # 連続測定を開始
