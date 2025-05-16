@@ -115,9 +115,17 @@ class ChinoController:
     def initialize(self):
         """初期化"""
         try:
-            # 出力をオフ
+            # シリアルバッファをクリア
+            self.ser.reset_input_buffer()
+            self.ser.reset_output_buffer()
+            
+            # リアルデータ要求
             self.send_command(" 1, 1,")  # リアルデータ要求
             time.sleep(0.1)
+            
+            # 応答を読み捨て
+            while self.ser.in_waiting > 0:
+                self.ser.read()
             
             return True
         except Exception as e:
