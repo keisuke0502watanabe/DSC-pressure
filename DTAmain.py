@@ -160,13 +160,17 @@ plotter = MenuDrivenPlotter()
 
 # 各実験条件での測定実行
 for k in range(1,len(line)):
+    # Heat or Coolの判定
+    hoc = "Heat" if rate[k] > 0 else "Cool"
+    
     print("Run the measurement number " + str(k) +" ! Tsv= "+str(Tsv[k])+" K" )
+    print("Mode: " + hoc)  # モードを表示
     if k ==1:
         print("Wait for " + str(wait1st) +" sec.")
     else:
         print("Wait for " + str(wait[k-1]) +" sec.")
-    print(rate[k])
-    print(dt[k])
+    print("Heating/Cooling rate: " + str(rate[k]) + " K/min")
+    print("Time interval: " + str(dt[k]) + " min")
     
     print("Run", "Date and Time", "Tsv / K", "pv2000", "pv2182A", "Tpv2000", "Tpv2182A")
 
