@@ -365,22 +365,53 @@ def check_current_status():
 
     print("================\n")
 
+def load_experiment_conditions():
+    """実験条件を入力またはファイルから読み込む"""
+    print("\n=== 実験条件の入力 ===")
+    print("1. 手動入力")
+    print("2. ファイルから読み込み")
+    choice = input("選択してください (1/2): ")
+    
+    if choice == "2":
+        # ファイルから読み込み
+        try:
+            filename = input("実験条件ファイルのパスを入力してください: ")
+            with open(filename, 'r') as f:
+                reader = csv.DictReader(f)
+                conditions = next(reader)
+                return {
+                    'sample_name': conditions['Sample Name'],
+                    'experimenter': conditions['Experimenter'],
+                    'start_temperature': float(conditions['Start Temperature']),
+                    'end_temperature': float(conditions['End Temperature']),
+                    'heating_rate': float(conditions['Heating Rate']),
+                    'wait_time': float(conditions['Wait Time']),
+                    'pressure': float(conditions['Pressure']),
+                    'pressure_tolerance': float(conditions['Pressure Tolerance'])
+                }
+        except Exception as e:
+            print("ファイル読み込みエラー: {}".format(e))
+            print("手動入力に切り替えます。")
+    
+    # 手動入力
+    return {
+        'sample_name': input("サンプル名を入力してください: "),
+        'experimenter': input("実験者名を入力してください: "),
+        'start_temperature': float(input("開始温度 (K) を入力してください: ")),
+        'end_temperature': float(input("終了温度 (K) を入力してください: ")),
+        'heating_rate': float(input("昇温速度 (K/min) を入力してください: ")),
+        'wait_time': float(input("待機時間 (min) を入力してください: ")),
+        'pressure': float(input("目標圧力 (MPa) を入力してください: ")),
+        'pressure_tolerance': float(input("圧力許容範囲 (%) を入力してください: "))
+    }
+
 def main():
     try:
         # 現在の状態を確認
         check_current_status()
         
         # 実験条件の設定
-        experiment_data = {
-            'sample_name': input("サンプル名を入力してください: "),
-            'experimenter': input("実験者名を入力してください: "),
-            'start_temperature': float(input("開始温度 (K) を入力してください: ")),
-            'end_temperature': float(input("終了温度 (K) を入力してください: ")),
-            'heating_rate': float(input("昇温速度 (K/min) を入力してください: ")),
-            'wait_time': float(input("待機時間 (min) を入力してください: ")),
-            'pressure': float(input("目標圧力 (MPa) を入力してください: ")),
-            'pressure_tolerance': float(input("圧力許容範囲 (%) を入力してください: "))
-        }
+        experiment_data = load_experiment_conditions()
 
         # 実験条件の確認
         print("\n=== 実験条件 ===")
