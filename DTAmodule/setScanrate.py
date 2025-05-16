@@ -5,7 +5,6 @@ import threading
 import csv
 import os
 from DTAmodule import vttotemp
-import am
 import traceback
 from natsort import natsorted
 import gspread
