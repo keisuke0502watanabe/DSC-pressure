@@ -116,7 +116,7 @@ class ChinoController:
         """初期化"""
         try:
             # 出力をオフ
-            self.send_command(" 1, 2,")  # 出力オフコマンド
+            self.send_command(" 1, 1,")  # リアルデータ要求
             time.sleep(0.1)
             
             return True
@@ -131,8 +131,30 @@ class ChinoController:
             temp (float): 設定温度（K）
         """
         try:
-            command = " 2, 4,1,{:8.1f},".format(temp)  # 温度設定コマンド
-            self.send_command(command)
+            # STX
+            self.ser.write(bytes([0x02]))
+            
+            # コマンド
+            command = " 2, 4,1," + str(temp) + ","
+            self.ser.write(command.encode('ascii'))
+            
+            # チェックサム計算
+            chkSum = 0
+            for char in command:
+                chkSum += ord(char)
+            chkSum += 3  # ETXの値
+            
+            # ETX
+            self.ser.write(bytes([0x03]))
+            
+            # チェックサム送信
+            hex_sum = hex(chkSum)[2:].upper().zfill(2)
+            chkSumValue = hex_sum[1] + hex_sum[0]
+            self.ser.write(chkSumValue.encode('ascii'))
+            
+            # CR+LF
+            self.ser.write(b'\r\n')
+            
             time.sleep(0.1)
         except Exception as e:
             print("温度設定エラー: {}".format(e))
