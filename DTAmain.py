@@ -117,7 +117,7 @@ class SpreadsheetManager:
 
 # スプレッドシートマネージャーの初期化
 spreadsheet_manager = SpreadsheetManager(
-    key_name='/home/pi/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json',
+    key_name='/home/yasumotosuzuka/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json',
     sheet_name='teruyama test1'
 )
 
@@ -351,7 +351,7 @@ for i in range(1,len(line)):
         print('exp. '+str(i) +' : ')
         print(line[i])
     
-os.chdir("/home/pi/Desktop/Experiment_result")
+os.chdir("/home/yasumotosuzuka/Desktop/Experiment_result")
 print(os.path.exists(filenameResults))
 print(os.listdir())
 if not os.path.exists(filenameResults):
