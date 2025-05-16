@@ -148,7 +148,7 @@ t3 = t0
 # 圧力制御の初期化
 pressure_control = None
 try:
-    pressure_control = PressureControl()
+    pressure_control = PressureController()
 except Exception as e:
     print("圧力制御の初期化に失敗しました: {}".format(e))
 
@@ -174,122 +174,120 @@ for k in range(1,len(line)):
     
     print("Run", "Date and Time", "Tsv / K", "pv2000", "pv2182A", "Tpv2000", "Tpv2182A")
 
-    while True:
-        time.sleep(.5)
-        a = chino.get_temperature()  
-        time.sleep(1)
-        t1 = time.time()
-        t2 = t1-t3
-        t3 = t1
-        
-        if k==1:
-            Tsvtemp = Tsvtemp + dt[k]*t2
-            chino.set_temperature(Tsvtemp)
-        else:
-            if t1 > t4+wait[k-1]:
+    # 結果ファイルを開く
+    with open(filenameResults, 'a') as f:
+        while True:
+            time.sleep(.5)
+            a = chino.get_temperature()  
+            time.sleep(1)
+            t1 = time.time()
+            t2 = t1-t3
+            t3 = t1
+            
+            if k==1:
                 Tsvtemp = Tsvtemp + dt[k]*t2
                 chino.set_temperature(Tsvtemp)
-        
-        t1 = time.time()
-        pv2000 = float(keithley_control.getPv2000())*1000000
-        pv2182A = float(keithley_control.getPv2182A())*1000000
-        vttotemp.VtToTemp(pv2000)
-        a = vttotemp.VtToTemp(pv2000)
-        vttotemp.VtToTemp(pv2182A)
-        
-        # 温度チェック
-        current_temp = vttotemp.VtToTemp(pv2000)
-        if current_temp > MAX_TEMPERATURE:
-            emergency_shutdown(pressure_control, 
-                             "温度が制限値 ({:.1f}K) を超えました: {:.1f}K".format(
-                                 MAX_TEMPERATURE, current_temp))
-        
-        # 圧力の測定と制御
-        current_pressure = None
-        if pressure_control is not None:
-            current_pressure = pressure_control.get_pressure()
-            if current_pressure is not None:
-                # 圧力チェック
-                if current_pressure > MAX_PRESSURE:
-                    emergency_shutdown(pressure_control,
-                                     "圧力が制限値 ({:.1f}MPa) を超えました: {:.1f}MPa".format(
-                                         MAX_PRESSURE, current_pressure))
+            else:
+                if t1 > t4+wait[k-1]:
+                    Tsvtemp = Tsvtemp + dt[k]*t2
+                    chino.set_temperature(Tsvtemp)
+            
+            t1 = time.time()
+            pv2000 = float(keithley_control.getPv2000())*1000000
+            pv2182A = float(keithley_control.getPv2182A())*1000000
+            vttotemp.VtToTemp(pv2000)
+            a = vttotemp.VtToTemp(pv2000)
+            vttotemp.VtToTemp(pv2182A)
+            
+            # 温度チェック
+            current_temp = vttotemp.VtToTemp(pv2000)
+            if current_temp > MAX_TEMPERATURE:
+                emergency_shutdown(pressure_control, 
+                                 "温度が制限値 ({:.1f}K) を超えました: {:.1f}K".format(
+                                     MAX_TEMPERATURE, current_temp))
+            
+            # 圧力の測定と制御
+            current_pressure = None
+            if pressure_control is not None:
+                current_pressure = pressure_control.get_pressure()
+                if current_pressure is not None:
+                    # 圧力チェック
+                    if current_pressure > MAX_PRESSURE:
+                        emergency_shutdown(pressure_control,
+                                         "圧力が制限値 ({:.1f}MPa) を超えました: {:.1f}MPa".format(
+                                             MAX_PRESSURE, current_pressure))
+                    
+                    # 目標圧力との差が許容パーセントを超える場合は調整
+                    tolerance = pressure[k] * (pressure_tolerance[k] / 100.0)
+                    if abs(current_pressure - pressure[k]) > tolerance:
+                        pressure_control.set_target_pressure(pressure[k], tolerance=tolerance)
+            
+            # 結果の記録
+            try:
+                # 初回のみヘッダーを保存
+                if not os.path.exists(filenameResults):
+                    save_results_header(filenameResults, {
+                        'id': experiment_manager.get_current_experiment_id(),
+                        'sample_name': sampleName,
+                        'lot': input("ロット番号を入力してください: "),
+                        'experimenter': input("実験者名を入力してください: ")
+                    })
                 
-                # 目標圧力との差が許容パーセントを超える場合は調整
-                tolerance = pressure[k] * (pressure_tolerance[k] / 100.0)
-                if abs(current_pressure - pressure[k]) > tolerance:
-                    pressure_control.set_target_pressure(pressure[k], tolerance=tolerance)
-        
-        # 結果の記録
-        try:
-            # 初回のみヘッダーを保存
-            if not os.path.exists(filenameResults):
-                save_results_header(filenameResults, {
-                    'id': experiment_manager.get_current_experiment_id(),
-                    'sample_name': sampleName,
-                    'lot': input("ロット番号を入力してください: "),
-                    'experimenter': input("実験者名を入力してください: ")
-                })
+                # データの記録
+                result = "{:.3f},{:.3f},{:.10f},{:.10f},{:.10f},{:.10f},{},{},{:.3f}\n".format(
+                    float(Tsvtemp), float(t1-t0), pv2000, pv2182A, 
+                    vttotemp.VtToTemp(pv2000), vttotemp.VtToTemp(pv2182A),
+                    hoc, k, current_pressure if current_pressure is not None else 0.0
+                )
+                f.write(result)
+                f.flush()  # バッファをフラッシュして即座に書き込み
+                
+                # データの収集
+                plotter.update_data(
+                    float(t1-t0),
+                    float(Tsvtemp),
+                    vttotemp.VtToTemp(pv2000),
+                    vttotemp.VtToTemp(pv2182A),
+                    current_pressure if current_pressure is not None else 0.0
+                )
+                
+                # スプレッドシートへのデータ追加
+                spreadsheet_data = {
+                    'temperature': float(Tsvtemp),
+                    'time': float(t1-t0),
+                    'pv2000': pv2000,
+                    'pv2182A': pv2182A,
+                    'temp2000': vttotemp.VtToTemp(pv2000),
+                    'temp2182A': vttotemp.VtToTemp(pv2182A),
+                    'heat_or_cool': hoc,
+                    'run': k,
+                    'date': str(datetime.date.today()),
+                    'time_of_day': str(datetime.datetime.now().time()),
+                    'sample_name': sampleName
+                }
+                spreadsheet_manager.add_data(spreadsheet_data)
+                
+            except Exception as e:
+                print("データ記録エラー: {}".format(e))
             
-            # データの記録
-            result = "{:.3f},{:.3f},{:.10f},{:.10f},{:.10f},{:.10f},{},{},{:.3f}\n".format(
-                float(Tsvtemp), float(t1-t0), pv2000, pv2182A, 
-                vttotemp.VtToTemp(pv2000), vttotemp.VtToTemp(pv2182A),
-                hoc, k, current_pressure if current_pressure is not None else 0.0
-            )
-            f.write(result)
-            
-            # データの収集
-            plotter.update_data(
-                float(t1-t0),
-                float(Tsvtemp),
-                vttotemp.VtToTemp(pv2000),
-                vttotemp.VtToTemp(pv2182A),
-                current_pressure if current_pressure is not None else 0.0
-            )
-            
-            # スプレッドシートへのデータ追加
-            spreadsheet_data = {
-                'temperature': float(Tsvtemp),
-                'time': float(t1-t0),
-                'pv2000': pv2000,
-                'pv2182A': pv2182A,
-                'temp2000': vttotemp.VtToTemp(pv2000),
-                'temp2182A': vttotemp.VtToTemp(pv2182A),
-                'heat_or_cool': hoc,
-                'run': k,
-                'date': str(datetime.date.today()),
-                'time_of_day': str(datetime.datetime.now().time()),
-                'sample_name': sampleName
-            }
-            spreadsheet_manager.add_data(spreadsheet_data)
-            
-        except Exception as e:
-            print("データ記録エラー: {}".format(e))
-        
-        f.close()
-        
-        # 終了条件
-        if (rate[k] > 0 and float(Tsvtemp) >= float(Tf[k])):
+            # 終了条件
+            if (rate[k] > 0 and float(Tsvtemp) >= float(Tf[k])):
                 print(k)
                 print(rate[k])
                 print("Run " + str(k) + " was finished")                           
                 print("wait for" + str(wait[k]) + " sec.")
-                #time.sleep(wait[k])
                 t4 = time.time()
                 break
                             
-        elif (rate[k] < 0 and float(Tsvtemp) <= float(Tf[k])):
+            elif (rate[k] < 0 and float(Tsvtemp) <= float(Tf[k])):
                 print(k)
                 print(Tsv[k])
                 print(Tf[k])
                 print("Run " + str(k) + " was finished")
                 print("wait for" + str(wait[k]) + " sec.")     
-                #time.sleep(wait[k])
                 t4 = time.time()
                 break
 
-    
 # 測定終了後にグラフを生成
 print("Generating plots...")
 try:
