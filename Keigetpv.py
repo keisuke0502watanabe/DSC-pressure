@@ -280,13 +280,57 @@ k2000_temperature = Keithley2000Temperature()
 k2182a = Keithley2182A()
 
 def getPressure():
-    """圧力を取得"""
-    return k2000_pressure.get_voltage()
+    """圧力センサーの電圧を取得し、圧力に変換
+    
+    Returns:
+        tuple: (電圧値（V）, 圧力値（Pa）)
+        None: 測定に失敗した場合
+    """
+    try:
+        if not k2000_pressure.connected:
+            k2000_pressure.connect()
+            k2000_pressure.initialize()
+        
+        # 電圧を取得
+        voltage = k2000_pressure.get_voltage()
+        if voltage is None:
+            return None
+            
+        # 圧力に変換（V → Pa）
+        pressure = (voltage - 0.00001) * 133400 / 5.12285 + 0.1
+        return (voltage, pressure)
+    except Exception as e:
+        print("圧力測定エラー: {}".format(e))
+        return None
 
 def getTemperature():
-    """電圧を取得"""
-    return k2000_temperature.get_voltage()
+    """温度センサーの電圧を取得
+    
+    Returns:
+        float: 温度センサーの電圧値（V）
+        None: 測定に失敗した場合
+    """
+    try:
+        if not k2000_temperature.connected:
+            k2000_temperature.connect()
+            k2000_temperature.initialize()
+        return k2000_temperature.get_voltage()
+    except Exception as e:
+        print("温度測定エラー: {}".format(e))
+        return None
 
 def getVoltage2182A():
-    """2182Aの電圧を取得"""
-    return k2182a.get_voltage() 
+    """2182Aの電圧を取得
+    
+    Returns:
+        float: 2182Aの電圧値（V）
+        None: 測定に失敗した場合
+    """
+    try:
+        if not k2182a.connected:
+            k2182a.connect()
+            k2182a.initialize()
+        return k2182a.get_voltage()
+    except Exception as e:
+        print("2182A測定エラー: {}".format(e))
+        return None 
