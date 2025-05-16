@@ -112,8 +112,63 @@ class ChinoController:
         Returns:
             float: 測定された温度値
         """
-        command = " 1, 1,"
-        return self.send_command(command)
+        try:
+            # STX
+            x = [0x02]
+            self.ser.write(x)
+
+            # コマンド
+            y = " 1, 1,"
+            x = y.encode()
+            self.ser.write(x)
+            
+            # チェックサム計算
+            i = 0
+            chkSum = 0
+            for i in range(len(y)):
+                chkSum = chkSum + ord(y[i])
+
+            # ETX
+            x = [0x03]
+            chkSum = chkSum + 3
+            self.ser.write(x)
+
+            # チェックサム送信
+            a = hex(chkSum)
+            chkSumU = a[-2:-1]
+            chkSumD = a[-1:]
+            chkSumValue = str.upper(chkSumD + chkSumU)
+            x = chkSumValue.encode()
+            self.ser.write(x)
+            
+            # CR+LF
+            x = b'\r\n'
+            self.ser.write(x)
+            
+            # 応答待ち
+            time.sleep(0.1)
+            
+            # 応答を読み取り
+            c = ""
+            camma = 0
+            i = 0
+            while True:
+                if self.ser.in_waiting > 0:
+                    recv_data = self.ser.read()
+                    a = struct.unpack_from("B", recv_data, 0)
+                    b = a[0]
+                    b = chr(b)
+                    if b == ",":
+                        camma += 1
+                        if camma == 5:
+                            pv = c[14:23]
+                            return float(pv)
+                    c += b
+                    i += 1
+            
+        except Exception as e:
+            print("温度取得エラー: {}".format(e))
+            return None
     
     def set_temperature(self, temp):
         """目標温度を設定
@@ -121,8 +176,53 @@ class ChinoController:
         Args:
             temp (float): 設定する温度値
         """
-        command = " 2, 4,1,{:.1f},".format(temp)
-        return self.send_command(command)
+        try:
+            # STX
+            x = [0x02]
+            self.ser.write(x)
+
+            # コマンド
+            y = " 2, 4,1," + str(temp) + ","
+            x = y.encode()
+            self.ser.write(x)
+            
+            # チェックサム計算
+            i = 0
+            chkSum = 0
+            for i in range(len(y)):
+                chkSum = chkSum + ord(y[i])
+
+            # ETX
+            x = [0x03]
+            chkSum = chkSum + 3
+            self.ser.write(x)
+
+            # チェックサム送信
+            a = hex(chkSum)
+            chkSumU = a[-2:-1]
+            chkSumD = a[-1:]
+            chkSumValue = str.upper(chkSumD + chkSumU)
+            x = chkSumValue.encode()
+            self.ser.write(x)
+            
+            # CR+LF
+            x = b'\r\n'
+            self.ser.write(x)
+            
+            # 応答待ち
+            time.sleep(0.1)
+            
+            # 応答を読み取り
+            while True:
+                if self.ser.in_waiting > 0:
+                    recv_data = self.ser.read()
+                    a = struct.unpack_from("B", recv_data, 0)
+                    if a[0] == 10:
+                        break
+            
+        except Exception as e:
+            print("温度設定エラー: {}".format(e))
+            return None
 
 # グローバルインスタンス
 chino = ChinoController()
