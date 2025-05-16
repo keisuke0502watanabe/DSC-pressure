@@ -13,6 +13,7 @@ from natsort import natsorted
 from DTAmodule.pressure_control import PressureControl
 from DTAmodule.visualize import DTAVisualizer
 from DTAmodule.experiment_manager import ExperimentManager, ExperimentMetadata
+from DTAmodule.plotter import MenuDrivenPlotter, KeyboardHandler
 from collections import deque
 import matplotlib.pyplot as plt
 
@@ -313,10 +314,10 @@ if Q2 == "y":
             Q2 = "n"
 
 elif Q2 == 'n':
-    samplename = input("What is name of the samle :")
-    filenameExpCond = samplename + "ExpCond.csv"
-    filenameResults = samplename + "Results.csv"
-    filenameError = samplename + "Error.csv"
+    sample = input("サンプル名を入力してください: ")
+    filenameExpCond = sample + "ExpCond.csv"
+    filenameResults = sample + "Results.csv"
+    filenameError = sample + "Error.csv"
     f = open(str(filenameExpCond), mode='a')
     f.close()
     f = open(str(filenameError), mode='a')
@@ -398,6 +399,9 @@ except Exception as e:
 
 # 可視化オブジェクトの初期化
 visualizer = DTAVisualizer()
+
+# プロッターの初期化
+plotter = MenuDrivenPlotter()
 
 class KeyboardHandler:
     """keyboardライブラリの代替クラス"""
@@ -561,8 +565,6 @@ class MenuDrivenPlotter:
         """実験履歴をエクスポート"""
         # 既存のexport_historyメソッドの実装
         pass
-
-plotter = MenuDrivenPlotter()
 
 for k in range(1,len(line)):
     print("Run the measurement number " + str(k) +" ! Tsv= "+str(Tsv[k])+" K" )
