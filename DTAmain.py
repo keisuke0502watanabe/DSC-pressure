@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from DTAmodule.emergency_handler import emergency_shutdown, MAX_TEMPERATURE, MAX_PRESSURE
+from DTAmodule.experiment_conditions import ExperimentConditions
 
 #鍵 
 # key_name = '/home/pi/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json'
@@ -48,111 +49,18 @@ spreadsheet_manager = SpreadsheetManager(
     sheet_name='teruyama test1'
 )
 
-def get_experiment_conditions():
-    """実験条件の取得"""
-    print("\n実験条件の設定")
-    print("1: 新しい実験条件を入力")
-    print("2: 過去の実験条件から選択")
-    
-    choice = input("選択してください (1/2): ")
-    
-    if choice == "1":
-        # 新しい実験条件の入力
-        print("\n実験IDの設定")
-        print("1: 自動生成")
-        print("2: 手動入力")
-        id_choice = input("選択してください (1/2): ")
-        
-        experiment_id = None
-        if id_choice == "2":
-            try:
-                experiment_id = int(input("実験IDを入力してください: "))
-            except ValueError:
-                print("無効な実験IDです。自動生成を使用します。")
-                experiment_id = experiment_manager.get_next_available_id()
-        
-        experiment_data = {
-            "sample_name": input("サンプル名を入力してください: "),
-            "experimenter": input("実験者名を入力してください: "),
-            "start_temperature": float(input("開始温度 (K) を入力してください: ")),
-            "end_temperature": float(input("終了温度 (K) を入力してください: ")),
-            "heating_rate": float(input("昇温速度 (K/min) を入力してください: ")),
-            "wait_time": float(input("待機時間 (min) を入力してください: ")),
-            "pressure": float(input("目標圧力 (MPa) を入力してください: ")),
-            "pressure_tolerance": float(input("圧力許容範囲 (%) を入力してください: "))
-        }
-        
-        try:
-            # 実験条件ファイルの作成
-            filenameExpCond = experiment_manager.create_experiment_condition_file(experiment_data)
-            
-            # 実験履歴に追加
-            experiment_id = experiment_manager.add_experiment_history(experiment_data, experiment_id)
-            print("実験ID: {} で保存されました".format(experiment_id))
-            
-            return filenameExpCond, experiment_data["sample_name"]
-        except ValueError as e:
-            print("エラー: {}".format(e))
-            return get_experiment_conditions()
-    
-    elif choice == "2":
-        # 過去の実験条件の表示
-        history = experiment_manager.get_experiment_history()
-        if not history:
-            print("過去の実験条件がありません")
-            return get_experiment_conditions()
-        
-        print("\n過去の実験条件:")
-        for exp in history:
-            print("ID: {}".format(exp['id']))
-            print("サンプル名: {}".format(exp['sample_name']))
-            print("実験者: {}".format(exp['experimenter']))
-            print("日時: {}".format(exp['timestamp']))
-            print("---")
-        
-        exp_id = int(input("使用する実験IDを入力してください: "))
-        exp_data = experiment_manager.get_experiment_by_id(exp_id)
-        
-        if exp_data is None:
-            print("無効な実験IDです")
-            return get_experiment_conditions()
-        
-        # 実験条件ファイルの作成
-        filenameExpCond = experiment_manager.create_experiment_condition_file(exp_data)
-        return filenameExpCond, exp_data["sample_name"]
-    
-    else:
-        print("無効な選択です")
-        return get_experiment_conditions()
-
-# 以下本文
-m = 1
-text = []
-
 # 実験条件の取得
-filenameExpCond, sampleName = get_experiment_conditions()
+experiment_conditions = ExperimentConditions()
+filenameExpCond, sampleName = experiment_conditions.get_experiment_conditions()
 filenameResults = filenameExpCond.replace('ExpCond.csv', 'Results.csv')
 filenameError = filenameExpCond.replace('ExpCond.csv', 'Error.csv')
 
 # メインプログラムの開始部分を修正
 Q2 = input("Have you already measured? y/n:")
 if Q2 == "y":
-    print("Please input the number of the experiment you want to continue.")
-    print("The number is shown in the file name of the experiment.")
-    print("For example, if the file name is 'ExpCond_1.csv', the number is 1.")
-    print("If you want to start a new experiment, please input 'n'.")
-    Q3 = input("Please input the number or 'n':")
-    if Q3 == "n":
+    filenameExpCond, filenameResults, filenameError = experiment_conditions.continue_experiment()
+    if filenameExpCond is None:
         Q2 = "n"
-    else:
-        try:
-            exp_num = int(Q3)
-            filenameExpCond = "ExpCond_{}.csv".format(exp_num)
-            filenameResults = "Results_{}.csv".format(exp_num)
-            filenameError = "Error_{}.csv".format(exp_num)
-        except ValueError:
-            print("Invalid input. Starting a new experiment.")
-            Q2 = "n"
 
 elif Q2 == 'n':
     sample = input("サンプル名を入力してください: ")
