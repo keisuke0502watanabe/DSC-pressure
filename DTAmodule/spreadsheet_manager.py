@@ -45,15 +45,76 @@ class SpreadsheetManager:
     
     def set_column_headers(self):
         """カラムヘッダーの設定"""
-        pass  # 一時的に無効化
+        if self.wks is None:
+            return
+            
+        headers = {
+            'A1': 'set Temp. / K',
+            'B1': 'time / s',
+            'C1': 'dt of Kei2000/ microvolts',
+            'D1': 'dt of Kei2182A/ microvolts',
+            'E1': 'dt of Kei2000/K',
+            'F1': 'dt of Kei2182A/K',
+            'G1': 'Heat or cool',
+            'H1': 'Run',
+            'I1': 'Date',
+            'J1': 'Date time',
+            'K1': 'Sample name'
+        }
+        
+        for cell, value in headers.items():
+            self.wks.update_acell(cell, value)
+    
+    def update_cells(self, cell_list):
+        """セルの更新
+        
+        Args:
+            cell_list: 更新するセルのリスト
+        """
+        if self.wks is None:
+            return
+        self.wks.update_cells(cell_list)
+    
+    def get_cell_range(self, start_row, num_rows=10):
+        """セル範囲の取得
+        
+        Args:
+            start_row (int): 開始行
+            num_rows (int): 取得する行数
+        
+        Returns:
+            list: セルのリスト
+        """
+        if self.wks is None:
+            return None
+            
+        try:
+            return self.wks.range('A{}:K{}'.format(start_row, start_row + num_rows - 1))
+        except:
+            self.wks.add_rows(10000)
+            return self.wks.range('A{}:K{}'.format(start_row, start_row + num_rows - 1))
     
     def add_data(self, data):
         """データのバッファへの追加"""
-        pass  # 一時的に無効化
+        self.buffer.append(data)
+        current_time = time.time()
+        if (current_time - self.last_update) >= SPREADSHEET_UPDATE_INTERVAL:
+            self.flush()
     
     def flush(self):
         """バッファのデータをスプレッドシートに書き込む"""
-        pass  # 一時的に無効化
+        if not self.buffer or self.wks is None:
+            return
+            
+        try:
+            while self.buffer:
+                data = self.buffer.popleft()
+                # データの書き込み処理
+                pass
+            self.last_update = time.time()
+        except Exception as e:
+            print("スプレッドシート更新エラー: {}".format(e))
+            self._log_error("スプレッドシート更新エラー", e)
     
     def _log_error(self, error_type, error):
         """エラーをログファイルに記録

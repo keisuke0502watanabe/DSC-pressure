@@ -413,45 +413,27 @@ for k in range(1,len(line)):
                 current_pressure if current_pressure is not None else 0.0
             )
             
+            # スプレッドシートへのデータ追加
+            spreadsheet_data = {
+                'temperature': float(Tsvtemp),
+                'time': float(t1-t0),
+                'pv2000': pv2000,
+                'pv2182A': pv2182A,
+                'temp2000': vttotemp.VtToTemp(pv2000),
+                'temp2182A': vttotemp.VtToTemp(pv2182A),
+                'heat_or_cool': hoc,
+                'run': k,
+                'date': str(datetime.date.today()),
+                'time_of_day': str(datetime.datetime.now().time()),
+                'sample_name': sampleName
+            }
+            spreadsheet_manager.add_data(spreadsheet_data)
+            
         except Exception as e:
             print("データ記録エラー: {}".format(e))
         
         f.close()
-        try:
-                    cell_list[list_pointer].value= float(Tsv[k])
-                    cell_list[list_pointer+1].value=float(t1-t0)
-                    cell_list[list_pointer+2].value=pv2000
-                    cell_list[list_pointer+3].value=pv2182A
-                    cell_list[list_pointer+4].value=vttotemp.VtToTemp(pv2000)
-                    cell_list[list_pointer+5].value=vttotemp.VtToTemp(pv2182A)
-                    cell_list[list_pointer+6].value=hoc
-                    cell_list[list_pointer+7].value=k
-                    cell_list[list_pointer+8].value=str(datetime.date.today())
-                    cell_list[list_pointer+9].value=str(datetime.datetime.now().time())
-                    cell_list[list_pointer+10].value=sampleName
-                    
-        except:
-                    pass
-        list_pointer+=11
-        if list_pointer > 99:
-            print('upload')
-            print("Run", "Date and Time", "Tsv / K", "pv2000", "pv2182A", "Tpv2000", "Tpv2182A")
-            try:
-                thread2.start()
-            except:
-                pass
-                #wks.update_cells(cell_list)
-            list_pointer = 0
-            sheet_pointer += 10
-                        
-#############  
-# 2022/07/05 Watanabe commented out, modified
-            try:
-                thread3.start()
-            except:
-                pass
-
-#############
+        
         # 終了条件
         if (rate[k] > 0 and float(Tsvtemp) >= float(Tf[k])):
                 print(k)
