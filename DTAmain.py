@@ -2,7 +2,6 @@ import Keigetpv
 from DTAmodule.chino_control import ChinoController
 import time
 import datetime
-from DTAmodule import setScanrate
 import threading
 import csv
 import os
