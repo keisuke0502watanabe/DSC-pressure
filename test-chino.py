@@ -144,6 +144,7 @@ class ChinoController:
             
             # コマンド
             command = " 2, 4,1," + str(temp) + ","
+            print("送信コマンド: {}".format(command))
             self.ser.write(command.encode('ascii'))
             
             # チェックサム計算
@@ -158,12 +159,27 @@ class ChinoController:
             # チェックサム送信
             hex_sum = hex(chkSum)[2:].upper().zfill(2)
             chkSumValue = hex_sum[1] + hex_sum[0]
+            print("チェックサム: {}".format(chkSumValue))
             self.ser.write(chkSumValue.encode('ascii'))
             
             # CR+LF
             self.ser.write(b'\r\n')
             
+            # 応答待ち
             time.sleep(0.1)
+            
+            # 応答を読み取り
+            response = ""
+            while self.ser.in_waiting > 0:
+                recv_data = self.ser.read()
+                value = struct.unpack_from("B", recv_data, 0)[0]
+                char = chr(value)
+                response += char
+                if value == 10:  # LF
+                    break
+            
+            print("応答: {}".format(response))
+            
         except Exception as e:
             print("温度設定エラー: {}".format(e))
 
@@ -184,22 +200,6 @@ class ChinoController:
             print("温度取得エラー: {}".format(e))
             return None
 
-    def output_on(self):
-        """出力をオン"""
-        try:
-            self.send_command(" 1, 1,")  # 出力オンコマンド
-            time.sleep(0.1)
-        except Exception as e:
-            print("出力オンエラー: {}".format(e))
-
-    def output_off(self):
-        """出力をオフ"""
-        try:
-            self.send_command(" 1, 2,")  # 出力オフコマンド
-            time.sleep(0.1)
-        except Exception as e:
-            print("出力オフエラー: {}".format(e))
-
 def main():
     # Chinoコントローラーのインスタンスを作成
     chino = ChinoController()
@@ -218,8 +218,6 @@ def main():
         print("Chino制御テストを開始します")
         print("1: 温度設定")
         print("2: 現在の温度取得")
-        print("3: 出力オン")
-        print("4: 出力オフ")
         print("q: 終了")
         
         while True:
@@ -237,14 +235,6 @@ def main():
                 else:
                     print("温度の取得に失敗しました")
             
-            elif cmd == '3':
-                chino.output_on()
-                print("出力をオンにしました")
-            
-            elif cmd == '4':
-                chino.output_off()
-                print("出力をオフにしました")
-            
             elif cmd.lower() == 'q':
                 break
             
@@ -257,8 +247,6 @@ def main():
         print("\nプログラムを終了します")
     
     finally:
-        # 出力をオフにして切断
-        chino.output_off()
         chino.disconnect()
         print("Chinoとの接続を切断しました")
 
