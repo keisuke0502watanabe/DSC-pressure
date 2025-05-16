@@ -96,7 +96,7 @@ class Keithley2000Pressure:
 
 class Keithley2000Temperature:
     """電圧測定用K2000制御クラス"""
-    def __init__(self, port='/dev/ttyUSB1'):
+    def __init__(self, port='/dev/ttyUSB2'):
         self.port = port
         self.ser = None
         self.connected = False
@@ -186,7 +186,7 @@ class Keithley2000Temperature:
 
 class Keithley2182A:
     """2182A制御クラス"""
-    def __init__(self, port='/dev/ttyUSB2'):
+    def __init__(self, port='/dev/ttyUSB1'):
         self.port = port
         self.ser = None
         self.connected = False
