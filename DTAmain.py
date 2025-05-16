@@ -5,7 +5,7 @@ import datetime
 import threading
 import csv
 import os
-import vttotemp
+from DTAmodule import vttotemp
 import traceback
 from natsort import natsorted
 # import gspread
