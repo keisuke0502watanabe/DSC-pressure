@@ -337,7 +337,7 @@ print(os.listdir())
 if not os.path.exists(filenameResults):
     thread1.start()
     f = open(str(filenameResults), mode='a')
-    f.write("set Temp. / K\t time / s\t dt of Kei2000/ microvolts \tdt of Kei2182A/ microvolts\t dt of Kei2000/K \t dt of Kei2182A/K \t Heat or cool \t Run \t Date \t Time of Day \t Sample Name \n")
+    f.write("set Temp. / K,time / s,dt of Kei2000/ microvolts,dt of Kei2182A/ microvolts,dt of Kei2000/K,dt of Kei2182A/K,Heat or cool,Run,Date,Time of Day,Sample Name\n")
     f.close()
 
 
@@ -633,25 +633,12 @@ for k in range(1,len(line)):
                 })
             
             # データの記録
-            result = "{:.3f}\t{:.3f}\t{:.10f}\t{:.10f}\t{:.10f}\t{:.10f}\t{}\t{}\t{:.3f}\n".format(
+            result = "{:.3f},{:.3f},{:.10f},{:.10f},{:.10f},{:.10f},{},{},{:.3f}\n".format(
                 float(Tsvtemp), float(t1-t0), pv2000, pv2182A, 
                 vttotemp.VtToTemp(pv2000), vttotemp.VtToTemp(pv2182A),
                 hoc, k, current_pressure if current_pressure is not None else 0.0
             )
             f.write(result)
-            
-            # スプレッドシートへのデータ追加
-            spreadsheet_manager.add_data({
-                'temperature': float(Tsvtemp),
-                'time': float(t1-t0),
-                'pv2000': pv2000,
-                'pv2182A': pv2182A,
-                'temp2000': vttotemp.VtToTemp(pv2000),
-                'temp2182A': vttotemp.VtToTemp(pv2182A),
-                'heat_or_cool': hoc,
-                'run': k,
-                'pressure': current_pressure if current_pressure is not None else 0.0
-            })
             
             # データの収集
             plotter.update_data(
@@ -756,11 +743,11 @@ def save_results_header(filename, experiment_data):
     """
     with open(filename, 'w') as f:
         # メタデータの保存
-        f.write("ID\t{}\n".format(experiment_data.get('id', '')))
-        f.write("Sample Name\t{}\n".format(experiment_data.get('sample_name', '')))
-        f.write("Lot\t{}\n".format(experiment_data.get('lot', '')))
-        f.write("Experimenter\t{}\n".format(experiment_data.get('experimenter', '')))
-        f.write("Date\t{}\n".format(datetime.datetime.now().strftime("%Y/%m/%d")))
+        f.write("ID,{}\n".format(experiment_data.get('id', '')))
+        f.write("Sample Name,{}\n".format(experiment_data.get('sample_name', '')))
+        f.write("Lot,{}\n".format(experiment_data.get('lot', '')))
+        f.write("Experimenter,{}\n".format(experiment_data.get('experimenter', '')))
+        f.write("Date,{}\n".format(datetime.datetime.now().strftime("%Y/%m/%d")))
         
         # データヘッダーの保存
-        f.write("set Temp. / K\ttime / s\tdt of Kei2000/ microvolts\tdt of Kei2182A/ microvolts\tdt of Kei2000/K\tdt of Kei2182A/K\tHeat or cool\tRun\tPressure / MPa\n")
+        f.write("set Temp. / K,time / s,dt of Kei2000/ microvolts,dt of Kei2182A/ microvolts,dt of Kei2000/K,dt of Kei2182A/K,Heat or cool,Run,Pressure / MPa\n")
