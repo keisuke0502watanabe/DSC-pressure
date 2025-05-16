@@ -1,5 +1,5 @@
 import Keigetpv
-import Chino
+from DTAmodule.chino_control import ChinoController
 import time
 import datetime
 import setScanrate
@@ -209,7 +209,9 @@ def emergency_shutdown(pressure_control, error_message):
     
     # 温度を室温に設定
     try:
-        Chino.setSv(ROOM_TEMPERATURE)
+        chino = ChinoController()
+        chino.connect()
+        chino.set_temperature(ROOM_TEMPERATURE)
         print("温度を室温 ({:.1f}K) に設定しました".format(ROOM_TEMPERATURE))
     except Exception as e:
         print("温度設定エラー: {}".format(e))
@@ -464,7 +466,9 @@ print(timeExp)
 
 
 #change temp. to first Tsv
-Chino.setSv(Tsv[1])
+chino = ChinoController()
+chino.connect()
+chino.set_temperature(Tsv[1])
 Tsvtemp=Tsv[1]
 wait1st=float(input("How long will you wait before 1st measurement? [sec]: "))
 print("The measurement started at "+ str(datetime.datetime.now()))
@@ -683,7 +687,7 @@ for k in range(1,len(line)):
 
     while True:
         time.sleep(.5)
-        a = Chino.getPv()  
+        a = chino.get_temperature()  
         time.sleep(1)
         t1 = time.time()
         t2 = t1-t3
@@ -691,11 +695,11 @@ for k in range(1,len(line)):
         
         if k==1:
             Tsvtemp = Tsvtemp + dt[k]*t2
-            Chino.setSv(Tsvtemp)
+            chino.set_temperature(Tsvtemp)
         else:
             if t1 > t4+wait[k-1]:
                 Tsvtemp = Tsvtemp + dt[k]*t2
-                Chino.setSv(Tsvtemp)
+                chino.set_temperature(Tsvtemp)
         
         t1 = time.time()
         pv2000 = float(Keigetpv.getPv2000())*1000000
