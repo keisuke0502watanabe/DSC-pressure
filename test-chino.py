@@ -18,7 +18,7 @@ class ChinoController:
         try:
             self.ser = serial.Serial(
                 port=self.port,
-                baudrate=9600,
+                baudrate=4800,
                 bytesize=serial.SEVENBITS,
                 parity=serial.PARITY_EVEN,
                 stopbits=serial.STOPBITS_ONE,
