@@ -84,30 +84,27 @@ class ChinoController:
             self.ser.write(b'\r\n')
             
             # 応答待ち
-            response = ""
-            comma_count = 0
+            c = ""
+            camma = 0
             i = 0
             while True:
                 if self.ser.in_waiting > 0:
                     recv_data = self.ser.read()
-                    value = struct.unpack_from("B", recv_data, 0)[0]
-                    char = chr(value)
-                    
-                    if char == ",":
-                        comma_count += 1
-                        if comma_count == 5:  # PV値の位置
-                            pv = response[14:23]
+                    a = struct.unpack_from("B", recv_data, 0)
+                    b = a[0]
+                    b = chr(b)
+                    if b == ",":
+                        camma += 1
+                        if camma == 5:
+                            pv = c[14:23]
                             try:
                                 return float(pv)
                             except ValueError:
                                 print("温度値の変換に失敗しました: {}".format(pv))
-                                print("応答全体: {}".format(response))
+                                print("応答全体: {}".format(c))
                                 return None
-                    response += char
+                    c += b
                     i += 1
-                    
-                    if value == 10:  # LF
-                        break
             
             print("応答が受信できませんでした")
             return None
