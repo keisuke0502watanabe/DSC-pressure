@@ -16,6 +16,9 @@ from DTAmodule.keyboard_handler import KeyboardHandler
 from DTAmodule.spreadsheet_manager import SpreadsheetManager
 from collections import deque
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from DTAmodule.emergency_handler import emergency_shutdown, MAX_TEMPERATURE, MAX_PRESSURE
 
 #鍵 
 # key_name = '/home/pi/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json'
@@ -29,8 +32,6 @@ import matplotlib.pyplot as plt
 experiment_manager = ExperimentManager()
 
 # 安全制限値の設定
-MAX_TEMPERATURE = 440.0  # K
-MAX_PRESSURE = 200.0    # MPa
 ROOM_TEMPERATURE = 298.15  # K (25℃)
 
 # スプレッドシート設定
@@ -46,44 +47,6 @@ spreadsheet_manager = SpreadsheetManager(
     key_name='/home/yasumotosuzuka/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json',
     sheet_name='teruyama test1'
 )
-
-def emergency_shutdown(pressure_control, error_message):
-    """緊急停止処理
-    
-    Args:
-        pressure_control: 圧力制御オブジェクト
-        error_message (str): エラーメッセージ
-    """
-    print("\n!!! 緊急停止 !!!")
-    print("理由: {}".format(error_message))
-    
-    # 温度を室温に設定
-    try:
-        chino = ChinoController()
-        chino.connect()
-        chino.set_temperature(ROOM_TEMPERATURE)
-        print("温度を室温 ({:.1f}K) に設定しました".format(ROOM_TEMPERATURE))
-    except Exception as e:
-        print("温度設定エラー: {}".format(e))
-    
-    # 圧力制御の停止
-    if pressure_control is not None:
-        try:
-            pressure_control.close()
-            print("圧力制御を停止しました")
-        except Exception as e:
-            print("圧力制御停止エラー: {}".format(e))
-    
-    # エラーログの記録
-    try:
-        with open("emergency_shutdown.log", "a") as f:
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            f.write("[{}] {}\n".format(timestamp, error_message))
-    except Exception as e:
-        print("ログ記録エラー: {}".format(e))
-    
-    print("\nシステムを終了します")
-    os._exit(1)  # 強制終了
 
 def get_experiment_conditions():
     """実験条件の取得"""
