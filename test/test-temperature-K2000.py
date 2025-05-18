@@ -4,7 +4,7 @@
 import time
 import sys
 import serial
-from Keigetpv import Keithley2000Temperature
+from DTAmodule.keithley_control import Keithley2000Temperature
 
 def check_port_exists(port):
     """USBポートの存在を確認"""
@@ -58,6 +58,7 @@ def main():
                 time.sleep(5)  # 5秒待機
                 continue
             
+            print("USBポートに接続を試みます...")
             # 接続を確立
             if not k2000.connect():
                 print("K2000への接続に失敗しました")
@@ -74,6 +75,7 @@ def main():
                 time.sleep(2)
                 continue
             
+            print("K2000の初期化を開始します...")
             # 初期化
             if not k2000.initialize():
                 print("K2000の初期化に失敗しました")
@@ -90,12 +92,13 @@ def main():
             while True:
                 try:
                     # 電圧を測定
+                    print("電圧測定コマンドを送信します...")
                     voltage = k2000.get_voltage()
                     
                     if voltage is not None:
                         print("\r現在の電圧: {:.6f}V".format(voltage), end="")
                     else:
-                        print("\r測定エラー", end="")
+                        print("\r測定エラー: データが取得できません", end="")
                         raise Exception("測定値が取得できません")
                     
                     time.sleep(1)  # 1秒待機
