@@ -12,7 +12,7 @@ from DTAmodule.visualize import DTAVisualizer
 from DTAmodule.experiment_manager import ExperimentManager, ExperimentMetadata
 from DTAmodule.plotter import MenuDrivenPlotter
 from DTAmodule.keyboard_handler import KeyboardHandler
-from DTAmodule.spreadsheet_manager import SpreadsheetManager
+# from DTAmodule.spreadsheet_manager import SpreadsheetManager
 from collections import deque
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,18 +36,12 @@ experiment_manager = ExperimentManager()
 ROOM_TEMPERATURE = 298.15  # K (25℃)
 
 # スプレッドシート設定
-SPREADSHEET_BUFFER_SIZE = 100  # バッファサイズ
-SPREADSHEET_UPDATE_INTERVAL = 300  # 更新間隔（秒）
+# SPREADSHEET_BUFFER_SIZE = 100  # バッファサイズ
+# SPREADSHEET_UPDATE_INTERVAL = 300  # 更新間隔（秒）
 
 # グラフ更新設定
 GRAPH_UPDATE_INTERVAL = 1000  # ミリ秒
 MAX_DATA_POINTS = 1000  # 表示するデータポイントの最大数
-
-# スプレッドシートマネージャーの初期化
-spreadsheet_manager = SpreadsheetManager(
-    key_name='/home/yasumotosuzuka/Desktop/json_file/olha/my-project-333708-dad962c8e2e4.json',
-    sheet_name='teruyama test1'
-)
 
 # 実験条件の取得
 experiment_conditions = ExperimentConditions()
@@ -251,22 +245,6 @@ for k in range(1,len(line)):
                     current_pressure if current_pressure is not None else 0.0
                 )
                 
-                # スプレッドシートへのデータ追加
-                spreadsheet_data = {
-                    'temperature': float(Tsvtemp),
-                    'time': float(t1-t0),
-                    'pv2000': pv2000,
-                    'pv2182A': pv2182A,
-                    'temp2000': vttotemp.VtToTemp(pv2000),
-                    'temp2182A': vttotemp.VtToTemp(pv2182A),
-                    'heat_or_cool': hoc,
-                    'run': k,
-                    'date': str(datetime.date.today()),
-                    'time_of_day': str(datetime.datetime.now().time()),
-                    'sample_name': sampleName
-                }
-                spreadsheet_manager.add_data(spreadsheet_data)
-                
             except Exception as e:
                 print("データ記録エラー: {}".format(e))
             
@@ -306,9 +284,6 @@ print("finished")
 # プログラム終了時に圧力制御のリソースを解放
 if pressure_control is not None:
     pressure_control.close()
-
-# プログラム終了時にバッファをフラッシュ
-spreadsheet_manager.flush()
 
 # グラフの表示
 plotter.show()
