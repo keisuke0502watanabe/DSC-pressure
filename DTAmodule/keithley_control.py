@@ -177,11 +177,17 @@ class Keithley2000Temperature:
     def get_voltage(self):
         """電圧を測定"""
         try:
+            print("Keithley 2000電圧測定コマンド送信")
             # 最新の測定値を取得
-            voltage = float(self.send_command("FETCH?"))
+            response = self.send_command("FETCH?")
+            if response is None:
+                print("Keithley 2000電圧測定応答なし")
+                return None
+            print("Keithley 2000電圧測定応答: {}".format(response))
+            voltage = float(response)
             return voltage
         except Exception as e:
-            print("電圧測定エラー: {}".format(e))
+            print("Keithley 2000電圧測定エラー: {}".format(e))
             return None
 
 class Keithley2182A:
@@ -337,20 +343,36 @@ def getTemperature():
         None: 測定に失敗した場合
     """
     try:
+        print("Keithley 2000温度測定開始")
         if not k2000_temperature.connected:
-            k2000_temperature.connect()
-            k2000_temperature.initialize()
+            print("Keithley 2000に接続を試みます")
+            if not k2000_temperature.connect():
+                print("Keithley 2000接続失敗")
+                return None
+            print("Keithley 2000接続成功")
+            if not k2000_temperature.initialize():
+                print("Keithley 2000初期化失敗")
+                return None
+            print("Keithley 2000初期化成功")
         
         # 電圧を取得
+        print("Keithley 2000電圧測定開始")
         voltage = k2000_temperature.get_voltage()
         if voltage is None:
+            print("Keithley 2000電圧取得失敗")
             return None
+        print("Keithley 2000電圧値: {}V".format(voltage))
             
         # 温度に変換（V → K）
-        temperature = VtToTemp(voltage)
-        return (voltage, temperature)
+        try:
+            temperature = VtToTemp(voltage)
+            print("Keithley 2000温度変換成功: {}K".format(temperature))
+            return (voltage, temperature)
+        except ValueError as ve:
+            print("Keithley 2000温度変換エラー: {}".format(ve))
+            return None
     except Exception as e:
-        print("温度測定エラー: {}".format(e))
+        print("Keithley 2000温度測定エラー: {}".format(e))
         return None
 
 def getVoltage2182A():
