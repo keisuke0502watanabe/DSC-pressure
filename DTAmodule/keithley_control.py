@@ -46,14 +46,23 @@ class Keithley2000Pressure:
         
         try:
             # コマンドを送信
+            print("Keithley 2000コマンド送信: {}".format(command))
             self.ser.write((command + '\n').encode())
-            time.sleep(0.1)
+            time.sleep(0.2)  # 応答待ち時間を延長
             
             # 応答を読み取り
-            response = self.ser.readline().decode().strip()
-            return response
+            if self.ser.in_waiting > 0:
+                response = self.ser.readline().decode().strip()
+                print("Keithley 2000生の応答: '{}'".format(response))
+                if not response:
+                    print("Keithley 2000空の応答を受信")
+                    return None
+                return response
+            else:
+                print("Keithley 2000応答なし（タイムアウト）")
+                return None
         except Exception as e:
-            print("コマンド送信エラー: {}".format(e))
+            print("Keithley 2000コマンド送信エラー: {}".format(e))
             return None
 
     def initialize(self):
@@ -136,14 +145,23 @@ class Keithley2000Temperature:
         
         try:
             # コマンドを送信
+            print("Keithley 2000コマンド送信: {}".format(command))
             self.ser.write((command + '\n').encode())
-            time.sleep(0.1)
+            time.sleep(0.2)  # 応答待ち時間を延長
             
             # 応答を読み取り
-            response = self.ser.readline().decode().strip()
-            return response
+            if self.ser.in_waiting > 0:
+                response = self.ser.readline().decode().strip()
+                print("Keithley 2000生の応答: '{}'".format(response))
+                if not response:
+                    print("Keithley 2000空の応答を受信")
+                    return None
+                return response
+            else:
+                print("Keithley 2000応答なし（タイムアウト）")
+                return None
         except Exception as e:
-            print("コマンド送信エラー: {}".format(e))
+            print("Keithley 2000コマンド送信エラー: {}".format(e))
             return None
 
     def initialize(self):
@@ -183,9 +201,14 @@ class Keithley2000Temperature:
             if response is None:
                 print("Keithley 2000電圧測定応答なし")
                 return None
-            print("Keithley 2000電圧測定応答: {}".format(response))
-            voltage = float(response)
-            return voltage
+            print("Keithley 2000電圧測定応答: '{}'".format(response))
+            try:
+                voltage = float(response)
+                print("Keithley 2000電圧値変換成功: {}V".format(voltage))
+                return voltage
+            except ValueError as ve:
+                print("Keithley 2000電圧値変換エラー: '{}' を数値に変換できません".format(response))
+                return None
         except Exception as e:
             print("Keithley 2000電圧測定エラー: {}".format(e))
             return None
