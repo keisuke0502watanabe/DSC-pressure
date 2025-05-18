@@ -5,7 +5,7 @@ import threading
 import csv
 import traceback
 from natsort import natsorted
-from DTAmodule.keithley_control import getTemperature, getVoltage2182A
+from DTAmodule.keithley_control import Keithley2000Temperature, getVoltage2182A
 from DTAmodule.chino_control import ChinoController
 from DTAmodule.pressure_control import PressureControl
 from DTAmodule.visualize import DTAVisualizer
@@ -28,6 +28,28 @@ from DTAmodule import vttotemp
 # scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
 # credentials = ServiceAccountCredentials.from_json_keyfile_name(key_name, scope)
 # gc = gspread.authorize(credentials)
+
+# グローバルインスタンスの作成
+k2000_temperature = Keithley2000Temperature(port='/dev/ttyUSB2')
+
+def getTemperature():
+    """温度センサーの電圧を取得
+    
+    Returns:
+        float: 電圧値（V）
+        None: 測定に失敗した場合
+    """
+    try:
+        if not k2000_temperature.connected:
+            if not k2000_temperature.connect():
+                return None
+            if not k2000_temperature.initialize():
+                return None
+        
+        return k2000_temperature.get_voltage()
+    except Exception as e:
+        print("温度測定エラー: {}".format(e))
+        return None
 
 # 実験管理システムの初期化
 experiment_manager = ExperimentManager()
