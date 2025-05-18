@@ -56,9 +56,13 @@ except Exception as e:
 
 try:
     # Keithley 2000の電圧を取得して温度に変換
-    pv2000 = float(getTemperature())*1000000
-    k2000_temp = vttotemp.VtToTemp(pv2000)
-    print("Keithley 2000温度: {:.2f} K".format(k2000_temp))
+    temp_data = getTemperature()
+    if temp_data is not None:
+        pv2000 = float(temp_data[0])*1000000  # 電圧値を取得してマイクロボルトに変換
+        k2000_temp = vttotemp.VtToTemp(pv2000)
+        print("Keithley 2000温度: {:.2f} K".format(k2000_temp))
+    else:
+        print("Keithley 2000温度取得エラー: データが取得できません")
 except Exception as e:
     print("Keithley 2000温度取得エラー: {}".format(e))
 
@@ -320,9 +324,13 @@ def check_current_status():
 
     try:
         # Keithley 2000の電圧を取得して温度に変換
-        pv2000 = float(getTemperature())*1000000
-        k2000_temp = vttotemp.VtToTemp(pv2000)
-        print("Keithley 2000温度: {:.2f} K".format(k2000_temp))
+        temp_data = getTemperature()
+        if temp_data is not None:
+            pv2000 = float(temp_data[0])*1000000  # 電圧値を取得してマイクロボルトに変換
+            k2000_temp = vttotemp.VtToTemp(pv2000)
+            print("Keithley 2000温度: {:.2f} K".format(k2000_temp))
+        else:
+            print("Keithley 2000温度取得エラー: データが取得できません")
     except Exception as e:
         print("Keithley 2000温度取得エラー: {}".format(e))
 
