@@ -3,7 +3,7 @@ import time
 import struct
 
 class ChinoController:
-    def __init__(self, port='/dev/ttyUSB1', baudrate=4800):
+    def __init__(self, port='/dev/ttyUSB1', baudrate=9600):
         """Chino温度制御器の初期化
         
         Args:
