@@ -43,15 +43,6 @@ ROOM_TEMPERATURE = 298.15  # K (25℃)
 GRAPH_UPDATE_INTERVAL = 1000  # ミリ秒
 MAX_DATA_POINTS = 1000  # 表示するデータポイントの最大数
 
-# 実験条件の取得
-experiment_conditions = ExperimentConditions()
-filenameExpCond, sampleName = experiment_conditions.get_experiment_conditions()
-filenameResults = filenameExpCond.replace('ExpCond.csv', 'Results.csv')
-filenameError = filenameExpCond.replace('ExpCond.csv', 'Error.csv')
-
-# 実験条件の解析と設定値の計算
-Tsv, Tf, rate, wait, dt, pressure, pressure_tolerance, timeExp = experiment_conditions.parse_experiment_conditions(filenameExpCond)
-
 # 現在の状態を表示
 print("\n=== 現在の状態 ===")
 try:
@@ -85,6 +76,15 @@ except Exception as e:
     print("圧力取得エラー: {}".format(e))
 
 print("================\n")
+
+# 実験条件の取得
+experiment_conditions = ExperimentConditions()
+filenameExpCond, sampleName = experiment_conditions.get_experiment_conditions()
+filenameResults = filenameExpCond.replace('ExpCond.csv', 'Results.csv')
+filenameError = filenameExpCond.replace('ExpCond.csv', 'Error.csv')
+
+# 実験条件の解析と設定値の計算
+Tsv, Tf, rate, wait, dt, pressure, pressure_tolerance, timeExp = experiment_conditions.parse_experiment_conditions(filenameExpCond)
 
 # メインプログラムの開始部分を修正
 Q2 = input("Have you already measured? y/n:")
